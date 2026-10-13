@@ -70,4 +70,14 @@ See `src/kozquloq/` - `auditors/` (geometry, kinematics, sensor health),
 `storage/` (DuckDB schema + views), `pytorch/` (quality-masked Dataset),
 `visualization/` (static overlay renderer), `cli/` (Typer app).
 
-Architecture and data-flow diagrams: `docs/architecture.md`.
+## Docs
+
+- [Wiki](https://github.com/unnobatroo/kozquloq/wiki) - Home,
+  Architecture, CLI reference, Deployment.
+- [docs/architecture.md](docs/architecture.md) - component, class, sequence
+  and ER diagrams, audit rules.
+- [infra/azure/README.md](infra/azure/README.md) - run the audit as an
+  Azure Container Apps job.
+- [CONTRIBUTING.md](CONTRIBUTING.md) - dev setup, CI gates, PR flow.
+- [SECURITY.md](SECURITY.md) - threat model and reporting.
+- [AGENTS.md](AGENTS.md) - invariants for agent-driven changes.
