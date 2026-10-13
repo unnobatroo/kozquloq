@@ -60,7 +60,7 @@ def _box_points_in_lidar(
 def build_synthetic_scene(n_samples: int = 8, seed: int = 0) -> tuple[SceneMeta, list[FrameBundle]]:
     rng = np.random.default_rng(seed)
     scene = SceneMeta(
-        token="synthetic-scene-0001",
+        token="synthetic-scene-0001",  # nosec B106: fixture ID, not a credential
         name="synthetic-0001",
         description="Synthetic fixture: urban drive with injected faults",
         weather="clear",
@@ -84,7 +84,7 @@ def build_synthetic_scene(n_samples: int = 8, seed: int = 0) -> tuple[SceneMeta,
             size = size * 1.6
         car = AnnBox(
             token=f"ann-car-{i}",
-            instance_token="inst-car-1",
+            instance_token="inst-car-1",  # nosec B106: fixture ID
             category="vehicle.car",
             center=np.array([car_x, 0.0, 0.8]),
             size=size,
@@ -96,7 +96,7 @@ def build_synthetic_scene(n_samples: int = 8, seed: int = 0) -> tuple[SceneMeta,
         if i == 5:  # injected ghost label: no lidar support, 12 m away
             boxes.append(
                 AnnBox(
-                    token="ann-ghost-5",
+                    token="ann-ghost-5",  # nosec B106: fixture ID
                     instance_token="inst-ghost-1",
                     category="vehicle.car",
                     center=np.array([ego_x + 12.0, -2.0, 0.8]),

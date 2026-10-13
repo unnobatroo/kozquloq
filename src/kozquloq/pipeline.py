@@ -63,7 +63,8 @@ class AuditPipeline:
                 for r in findings.boxes:
                     r.finalize_severity()
 
-                assert findings.health is not None
+                if findings.health is None:
+                    raise RuntimeError("no sensor-health auditor produced frame health")
                 self.store.save_sample(findings.health.to_row(bundle, scene))
                 audit_rows.extend(r.to_row(bundle.sample_token) for r in findings.boxes)
                 if self.viz_dir is not None and any(r.flagged for r in findings.boxes):

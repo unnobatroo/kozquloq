@@ -101,8 +101,8 @@ class DuckDBAuditStore(AuditStore):
 
     def clear(self) -> None:
         """Delete all rows (children first) for a clean re-audit."""
-        for table in ("audits", "samples"):
-            self.con.execute(f"DELETE FROM {table}")
+        self.con.execute("DELETE FROM audits")
+        self.con.execute("DELETE FROM samples")
 
     @contextmanager
     def transaction(self) -> Iterator[None]:
