@@ -11,8 +11,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+from pyquaternion import Quaternion
 
-from kozquloq.auditors.geometry import quat_to_rot
 from kozquloq.types import AnnBox, FrameBundle, SceneMeta
 
 if TYPE_CHECKING:
@@ -52,7 +52,7 @@ def _box_points_in_lidar(
 ) -> NDArray[np.float64]:
     """Random points inside an oriented box, returned in the lidar frame."""
     local = rng.uniform(-0.5, 0.5, (n, 3)) * size[[1, 0, 2]]  # x=length, y=width
-    global_pts: NDArray[np.float64] = local @ quat_to_rot(_yaw_quat(yaw)).T + center
+    global_pts: NDArray[np.float64] = local @ Quaternion(*_yaw_quat(yaw)).rotation_matrix.T + center
     out: NDArray[np.float64] = global_pts @ T_global_to_lidar[:3, :3].T + T_global_to_lidar[:3, 3]
     return out
 

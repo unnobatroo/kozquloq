@@ -13,11 +13,11 @@ dependencies = [
     "pydantic-settings>=2.2",
     "typer>=0.12",
     "rich>=13.7",
-    "jinja2>=3.1",
     "torch>=2.2",
     "torchvision>=0.17",
     "nuscenes-devkit>=1.1.11",
     "shapely>=2.0",
+    "pyarrow>=14,<19",
 ]
 
 [project.scripts]
@@ -59,7 +59,6 @@ packages = ["src/kozquloq"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/kozquloq/storage/schema.sql" = "kozquloq/storage/schema.sql"
-"src/kozquloq/visualization/templates/report.html.jinja" = "kozquloq/visualization/templates/report.html.jinja"
 
 [tool.ruff]
 line-length = 100
@@ -89,7 +88,7 @@ disallow_untyped_defs = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["nuscenes.*", "pyquaternion.*", "cv2.*", "duckdb.*", "openai.*"]
+module = ["nuscenes.*", "pyquaternion.*", "cv2.*", "duckdb.*", "pyarrow.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

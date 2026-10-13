@@ -69,25 +69,3 @@ def slices_table(rows: list[dict[str, Any]]) -> Table:
             f"[{style}]{pct}[/]",
         )
     return t
-
-
-def worst_table(rows: list[dict[str, Any]]) -> Table:
-    t = Table(title="Most Anomalous Frames", header_style="bold cyan")
-    t.add_column("Sample")
-    t.add_column("Severity", justify="right")
-    t.add_column("Ghosts", justify="right")
-    t.add_column("Kin.", justify="right")
-    t.add_column("Drift")
-    t.add_column("Speed m/s", justify="right")
-    for r in rows:
-        sev = r["max_severity"] or 0.0
-        style = "red" if sev >= 0.5 else "yellow" if sev > 0 else "white"
-        t.add_row(
-            r["sample_token"],
-            f"[{style}]{sev}[/]",
-            str(r["ghosts"]),
-            str(r["kinematic_outliers"]),
-            "yes" if r["has_geometric_drift"] else "-",
-            f"{r['ego_speed_mps']:.1f}" if r["ego_speed_mps"] is not None else "-",
-        )
-    return t

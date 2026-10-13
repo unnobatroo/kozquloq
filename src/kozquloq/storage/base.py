@@ -9,30 +9,35 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    import pyarrow as pa
+
 
 class AuditStore(ABC):
-    """Persistence contract for audit metrics (scenes/samples/audits/images)."""
-
-    @abstractmethod
-    def save_scene(self, row: dict[str, Any]) -> None: ...
+    """Persistence contract for audit metrics (samples/audits)."""
 
     @abstractmethod
     def save_sample(self, row: dict[str, Any]) -> None: ...
 
     @abstractmethod
-    def save_audit_results(self, rows: list[dict[str, Any]]) -> None: ...
-
-    @abstractmethod
-    def save_image(self, sample_token: str, variant: str, jpeg: bytes) -> None: ...
+    def save_audits(self, rows: list[dict[str, Any]]) -> None: ...
 
     @abstractmethod
     def query(self, sql: str, params: list[Any] | None = None) -> list[dict[str, Any]]: ...
 
     @abstractmethod
-    def query_slice(self) -> list[dict[str, Any]]: ...
+    def query_arrow(self, sql: str, params: list[Any] | None = None) -> pa.Table: ...
+
+    @abstractmethod
+    def get_slice_metrics(self) -> list[dict[str, Any]]: ...
 
     @abstractmethod
     def get_summary(self) -> dict[str, Any]: ...
+
+    @abstractmethod
+    def get_invalid_tokens(self, min_severity: float = 0.5) -> list[dict[str, Any]]: ...
+
+    @abstractmethod
+    def export_parquet(self, out_path: str) -> None: ...
 
     @abstractmethod
     def clear(self) -> None: ...

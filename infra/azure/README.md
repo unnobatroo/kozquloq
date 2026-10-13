@@ -1,14 +1,15 @@
 # Running the audit on Azure
 
 The audit is batch compute, so it maps cleanly onto **Azure Container Apps jobs**
-(on-demand or scheduled). The dashboard on Vercel reads the published report.
+(on-demand or scheduled). Output is a DuckDB file plus a Parquet invalid-token
+mask that training pipelines can consume directly.
 
 ## Flow
 
 ```text
-dataset (Blob Storage) --> ACA job: kozquloq audit + report --json-out
+dataset (Blob Storage) --> ACA job: kozquloq scan + export
                                    |
-                                   +--> Supabase REST (publish_report.py)
+                                   +--> /out/kozquloq.duckdb + mask.parquet
 ```
 
 ## 1. Build and push the image
@@ -28,16 +29,14 @@ az containerapp job create \
   --cpu 2 --memory 4Gi \
   --replica-timeout 1800 \
   --trigger-type Manual \
-  --args audit --dataroot /data --db /out/kozquloq.duckdb \
-  --env-vars SUPABASE_URL=<url> SUPABASE_SERVICE_KEY=<key>
+  --args scan --dataroot /data --db /out/kozquloq.duckdb --viz-dir /out/viz
 ```
 
 Mount the nuScenes dataset via Azure Files (`--volumes`) or download it in an
-init container. A second command in the same job publishes the report:
+init container. A second run publishes the mask:
 
 ```bash
-kozquloq report --db /out/kozquloq.duckdb --no-html --json-out /tmp/report.json \
-  && python scripts/publish_report.py /tmp/report.json
+kozquloq export --db /out/kozquloq.duckdb --output /out/invalid_tokens.parquet
 ```
 
 ## 3. Run it

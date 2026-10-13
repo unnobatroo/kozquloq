@@ -1,35 +1,27 @@
-"""kozquloq CLI (spec §6): demo, audit, report, diagnose, chat."""
+"""kozquloq CLI: scan, viz, export, demo."""
 
 from __future__ import annotations
 
-import contextlib
+import json
 import os
-import webbrowser
 from typing import TYPE_CHECKING
 
 import typer
-from rich.markdown import Markdown
 
-from kozquloq.agent.diagnostics import DiagnosticAgent
-from kozquloq.cli.console import (
-    console,
-    health_table,
-    slices_table,
-    worst_table,
-)
-from kozquloq.storage import views
+from kozquloq.cli.console import console, health_table, slices_table
 from kozquloq.storage.duckdb_store import Store
 
 if TYPE_CHECKING:
     from kozquloq.types import FrameBundle, SceneMeta
 
-app = typer.Typer(help="Kozquloq: AV sensor data quality & diagnostics pipeline.")
+app = typer.Typer(help="Kozquloq: AV annotation linter (ghosts, kinematics, scale).")
 
 
-def _audit_scenes(
+def _scan_scenes(
     store: Store,
     scenes: list[tuple[SceneMeta, list[FrameBundle]]],
     source: str,
+    viz_dir: str | None,
 ) -> None:
     from rich.progress import Progress
 
@@ -39,39 +31,25 @@ def _audit_scenes(
     console.print(f"[bold]Auditing {total} keyframes[/] from {source}")
     with Progress(console=console) as progress:
         task = progress.add_task("auditing", total=total)
-        run_audit(scenes, store, on_progress=lambda _b: progress.advance(task), clear=True)
+        run_audit(
+            scenes,
+            store,
+            viz_dir=viz_dir,
+            on_progress=lambda _b: progress.advance(task),
+            clear=True,
+        )
+    console.print(health_table(store.get_summary()))
+    console.print(slices_table(store.get_slice_metrics()))
 
 
 @app.command()
-def demo(
-    browser: bool = typer.Option(True, "--browser/--no-browser"),
-) -> None:
-    """Zero-setup demo: synthetic scene -> audit -> terminal summary + HTML report."""
-    from kozquloq.synthetic import build_synthetic_scene
-    from kozquloq.visualization.report_generator import render_report
-
-    store = Store(":memory:")
-    scene, frames = build_synthetic_scene(n_samples=8)
-    _audit_scenes(store, [(scene, frames)], "synthetic fixture scene")
-
-    console.print(health_table(views.health_summary(store)))
-    console.print(slices_table(views.slice_failure_rates(store)))
-    console.print(worst_table(views.worst_samples(store)))
-
-    out = render_report(store, "audit_report.html")
-    console.print(f"[bold green]Report written to {out.resolve()}[/]")
-    if browser:
-        with contextlib.suppress(Exception):
-            webbrowser.open(out.resolve().as_uri())
-
-
-@app.command()
-def audit(
+def scan(
     dataroot: str | None = typer.Option(None, help="nuScenes or fixture dataset root"),
     version: str = typer.Option("v1.0-mini"),
     db: str = typer.Option("data/kozquloq.duckdb"),
+    viz_dir: str | None = typer.Option(None, "--viz-dir", help="Write flagged-frame overlays here"),
 ) -> None:
-    """Run the end-to-end audit and populate DuckDB."""
+    """Audit the dataset and print a summary of annotation failures."""
     from kozquloq.ingestion import load_frames
     from kozquloq.synthetic import build_synthetic_scene
 
@@ -80,62 +58,72 @@ def audit(
         source = f"dataset at {dataroot}"
     else:
         if dataroot:
-            console.print(f"[yellow]dataroot {dataroot} not found — using synthetic fixtures[/]")
+            console.print(f"[yellow]dataroot {dataroot} not found, using synthetic fixtures[/]")
         scenes = [build_synthetic_scene(n_samples=8)]
         source = "synthetic fixture scene"
 
     store = Store(db)
-    _audit_scenes(store, scenes, source)
-    console.print(health_table(views.health_summary(store)))
+    _scan_scenes(store, scenes, source, viz_dir)
     console.print(f"[bold green]Audit written to {db}[/]")
+    if viz_dir:
+        console.print(f"[bold green]Annotated overlays written to {viz_dir}[/]")
 
 
 @app.command()
-def report(
-    db: str = typer.Option("data/kozquloq.duckdb"),
-    html: bool = typer.Option(True, "--html/--no-html"),
-    serve: bool = typer.Option(False, "--serve/--no-serve"),
-    out: str = typer.Option("audit_report.html"),
-    json_out: str | None = typer.Option(None, "--json-out", help="Export dashboard JSON"),
+def viz(
+    sample_token: str,
+    dataroot: str = typer.Option(..., help="nuScenes or fixture dataset root"),
+    version: str = typer.Option("v1.0-mini"),
+    output_dir: str = typer.Option("viz_out"),
 ) -> None:
-    """Terminal summary + optional HTML report from an audited database."""
-    from kozquloq.visualization.report_generator import export_report_json, render_report
+    """Overlay boxes + lidar on one keyframe and save the JPEG."""
+    from kozquloq.auditors import audit_frame
+    from kozquloq.ingestion import load_frames
+    from kozquloq.visualization.overlay import save_annotated_frame
 
+    for _scene, frames in load_frames(dataroot, version):
+        for bundle in frames:
+            if bundle.sample_token == sample_token:
+                _, boxes = audit_frame(bundle)
+                path = save_annotated_frame(bundle, boxes, output_dir)
+                console.print(f"[bold green]Wrote {path.resolve()}[/]")
+                return
+    raise typer.BadParameter(f"sample_token {sample_token!r} not found under {dataroot}")
+
+
+@app.command()
+def export(
+    db: str = typer.Option("data/kozquloq.duckdb"),
+    output: str = typer.Option("invalid_tokens.json", "--output"),
+    min_severity: float = typer.Option(0.5, "--min-severity"),
+) -> None:
+    """Export the audit mask: annotation_token + reason for flagged labels.
+
+    Output format follows the file extension: .parquet via DuckDB COPY,
+    anything else as JSON.
+    """
     store = Store(db)
-    console.print(health_table(views.health_summary(store)))
-    console.print(slices_table(views.slice_failure_rates(store)))
-    if html:
-        path = render_report(store, out)
-        console.print(f"[bold green]Report written to {path.resolve()}[/]")
-        if serve:
-            webbrowser.open(path.resolve().as_uri())
-    if json_out:
-        jpath = export_report_json(store, json_out)
-        console.print(f"[bold green]Dashboard JSON written to {jpath.resolve()}[/]")
+    if output.endswith(".parquet"):
+        store.export_parquet(output)
+        console.print(f"[bold green]Parquet mask written to {output}[/]")
+        return
+    rows = store.get_invalid_tokens(min_severity)
+    with open(output, "w") as fh:
+        json.dump(rows, fh, indent=2)
+    console.print(f"[bold green]{len(rows)} invalid tokens written to {output}[/]")
 
 
 @app.command()
-def diagnose(
-    query: str,
-    provider: str = typer.Option("mock"),
-    db: str = typer.Option("data/kozquloq.duckdb"),
+def demo(
+    viz: bool = typer.Option(True, "--viz/--no-viz"),
+    viz_dir: str = typer.Option("viz_out"),
 ) -> None:
-    """Run the diagnostic agent against the audit database."""
-    store = Store(db)
-    result = DiagnosticAgent(store, provider=provider).run(query)
-    console.print(Markdown(result.report))
-    console.print(f"[dim]tools used: {', '.join(result.tool_calls)}[/]")
+    """In-memory synthetic scan; writes a few overlay JPEGs by default."""
+    from kozquloq.synthetic import build_synthetic_scene
 
-
-@app.command()
-def chat(
-    db: str = typer.Option("data/kozquloq.duckdb"),
-    report: str = typer.Option("audit_report.html"),
-) -> None:
-    """Launch the interactive diagnostic REPL."""
-    from kozquloq.cli.repl import run_repl
-
-    run_repl(db, report)
+    store = Store(":memory:")
+    scene, frames = build_synthetic_scene(n_samples=8)
+    _scan_scenes(store, [(scene, frames)], "synthetic fixture scene", viz_dir if viz else None)
 
 
 if __name__ == "__main__":

@@ -13,9 +13,8 @@ body:
         - Sensor health (exposure / drift detection)
         - Storage (DuckDB schema / views)
         - PyTorch dataset
-        - Diagnostic agent
-        - Visualization / HTML report
-        - CLI / REPL
+        - Overlay visualization
+        - CLI
         - Other
     validations:
       required: true
@@ -31,7 +30,7 @@ body:
     attributes:
       label: Reproduction steps
       description: Command run, dataset (fixture / v1.0-mini / other), flags.
-      placeholder: "uv run kozquloq audit --dataroot ... --db ..."
+      placeholder: "uv run kozquloq scan --dataroot ... --db ..."
     validations:
       required: true
   - type: textarea
