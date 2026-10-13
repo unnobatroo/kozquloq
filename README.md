@@ -30,6 +30,17 @@ python scripts/seed_synthetic_fixtures.py --out data/fixture
 uv run kozquloq scan --dataroot data/fixture
 ```
 
+## Live report
+
+A static audit report on nuScenes v1.0-mini is hosted at
+[kozquloq.vercel.app](https://kozquloq.vercel.app). Rebuild it after a scan:
+
+```bash
+uv run python scripts/build_site.py --db data/kozquloq.duckdb \
+    --dataroot data/nuscenes --out site_out
+cd site_out && vercel deploy --prod
+```
+
 ## Commands
 
 - `scan` - run the audit, print a Rich summary + slice failure table; with
