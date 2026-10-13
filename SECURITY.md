@@ -23,7 +23,7 @@ disclosure timeline agreed with you before any public fix lands.
 ## Scope notes
 
 Kozquloq processes autonomous-driving sensor data and writes audit results
-to DuckDB. Relevant risk areas: SQL injection through the diagnostic
-agent's `run_sql` tool (currently restricted to read-only SELECT/WITH),
-unsafe deserialization of point-cloud/npz payloads, and HTML/JS injection
-into the generated report from dataset-controlled strings.
+to DuckDB. Relevant risk areas: unsafe deserialization of dataset payloads
+(pcd.bin / npz / JPEG parsing via the devkit and OpenCV), malformed fixture
+JSON, and local file writes under `--viz-dir`/`--db`/`--output` paths.
+All SQL uses parameter binding; there is no dynamic query surface.

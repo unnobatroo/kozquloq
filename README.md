@@ -58,3 +58,5 @@ uv run mypy src tests
 See `src/kozquloq/` - `auditors/` (geometry, kinematics, sensor health),
 `storage/` (DuckDB schema + views), `pytorch/` (quality-masked Dataset),
 `visualization/` (static overlay renderer), `cli/` (Typer app).
+
+Architecture and data-flow diagrams: `docs/architecture.md`.
