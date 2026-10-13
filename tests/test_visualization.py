@@ -14,13 +14,12 @@ from kozquloq.visualization.overlay import (
     draw_3d_boxes_on_image,
     draw_lidar_points_on_image,
     encode_jpeg,
+    save_annotated_frame,
 )
-from kozquloq.visualization.report_generator import render_report
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from kozquloq.storage.duckdb_store import Store
     from kozquloq.types import FrameBundle
 
 
@@ -49,26 +48,10 @@ def test_encode_jpeg(bundle: FrameBundle) -> None:
     assert encode_jpeg(bundle.image)[:2] == b"\xff\xd8"
 
 
-def test_render_report(audited_store: Store, tmp_path: Path) -> None:
-    out = render_report(audited_store, tmp_path / "r.html", diagnostics_md="test findings")
-    html = out.read_text()
-    assert "<html" in html
-    assert "data:image/jpeg;base64," in html
-    assert "Slice Degradation Matrix" in html
-    assert "test findings" in html
-    assert "vehicle.car" in html
-
-
-def test_export_report_json(audited_store: Store, tmp_path: Path) -> None:
-    import json
-
-    from kozquloq.visualization.report_generator import export_report_json
-
-    out = export_report_json(audited_store, tmp_path / "report.json")
-    d = json.loads(out.read_text())
-    assert d["health"]["grade"] in "ABCDF"
-    assert d["findings"] and d["findings"][0]["title"] == "Phantom objects"
-    assert d["charts"]["severity_hist"]
-    assert d["gallery"][0]["images"]["full"].startswith("assets/")
-    assert (tmp_path / "assets").is_dir()
-    assert d["gallery"][0]["plain"]  # plain-English caption present
+def test_save_annotated_frame(bundle: FrameBundle, tmp_path: Path) -> None:
+    results = audit_frame_geometry(bundle)
+    for r in results:
+        r.finalize_severity()
+    path = save_annotated_frame(bundle, results, tmp_path)
+    assert path.name == f"{bundle.sample_token}.jpg"
+    assert path.stat().st_size > 500

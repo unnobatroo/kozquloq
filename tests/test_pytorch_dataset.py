@@ -13,7 +13,7 @@ def _make_db(tmp_path: Path, synthetic_frames: tuple[SceneMeta, list[FrameBundle
 
     db = str(tmp_path / "audit.duckdb")
     with Store(db) as store:
-        run_audit([synthetic_frames], store, save_images=False)
+        run_audit([synthetic_frames], store)
     return db
 
 

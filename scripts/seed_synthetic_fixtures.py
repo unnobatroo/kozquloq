@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write a synthetic fixture dataset to disk (auditable via `kozquloq audit`)."""
+"""Write a synthetic fixture dataset to disk (auditable via `kozquloq scan`)."""
 
 import argparse
 
@@ -15,8 +15,8 @@ def main() -> None:
 
     scene, frames = build_synthetic_scene(n_samples=args.samples, seed=args.seed)
     dump_fixture_dataset(scene, frames, args.out)
-    print(f"fixture written to {args.out} — audit it with:")
-    print(f"  kozquloq audit --dataroot {args.out}")
+    print(f"fixture written to {args.out} - audit it with:")
+    print(f"  kozquloq scan --dataroot {args.out}")
 
 
 if __name__ == "__main__":

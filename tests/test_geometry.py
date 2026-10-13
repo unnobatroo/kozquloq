@@ -3,21 +3,26 @@ import numpy as np
 from kozquloq.auditors.geometry import (
     audit_frame_geometry,
     box_corners_global,
+    devkit_box,
     points_in_box,
     project_corners_to_camera,
     project_lidar_to_camera,
-    quat_to_rot,
 )
 from kozquloq.types import AnnBox, FrameBundle
 
 
-def test_quat_to_rot_identity() -> None:
-    assert np.allclose(quat_to_rot(np.array([1.0, 0, 0, 0])), np.eye(3))
-
-
-def test_quat_to_rot_90deg_yaw() -> None:
-    R = quat_to_rot(np.array([np.cos(np.pi / 4), 0, 0, np.sin(np.pi / 4)]))
-    assert np.allclose(R @ np.array([1.0, 0, 0]), [0, 1, 0], atol=1e-9)
+def test_devkit_box_adapts_annbox() -> None:
+    box = AnnBox(
+        token="b",
+        instance_token="i",
+        category="vehicle.car",
+        center=np.array([10.0, 0.0, 0.8]),
+        size=np.array([2.0, 4.0, 2.0]),
+        orientation=np.array([1.0, 0, 0, 0]),
+    )
+    b = devkit_box(box)
+    assert np.allclose(b.center, [10.0, 0.0, 0.8])
+    assert np.allclose(b.wlh, [2.0, 4.0, 2.0])
 
 
 def test_points_in_box() -> None:
@@ -58,8 +63,70 @@ def test_ghost_detection(bundle: FrameBundle) -> None:
     results = audit_frame_geometry(bundle)
     by_token = {r.annotation_token: r for r in results}
     assert by_token["ann-1"].lidar_point_count > 300
-    assert not by_token["ann-1"].is_ghost_label
+    assert not by_token["ann-1"].is_ghost
     assert by_token["ann-ghost"].lidar_point_count == 0
-    assert by_token["ann-ghost"].is_ghost_label
+    assert by_token["ann-ghost"].is_ghost
     assert by_token["ann-1"].is_visible_on_camera
     assert 9 < by_token["ann-1"].distance_to_ego_m < 11
+
+
+def test_ground_plane_isolation(bundle: FrameBundle) -> None:
+    """Road-surface returns (lidar z < -2.0) inside a box must not count."""
+    # Lidar sits 1.8 m above the global origin in this fixture, so a global
+    # z of -0.8 is lidar z = -2.6: road-surface territory.
+    box = AnnBox(
+        token="ground-box",
+        instance_token="i",
+        category="vehicle.car",
+        center=np.array([10.0, 0.0, -0.8]),
+        size=np.array([2.0, 4.0, 2.0]),
+        orientation=np.array([1.0, 0, 0, 0]),
+    )
+    pts_lidar = np.array([[10.0, 0.0, -2.6]])
+    pts_global = pts_lidar + np.array([0.0, 0.0, 1.8])
+    assert points_in_box(pts_global, box).all()
+
+    # Same geometry via the full audit: lidar-frame ground points are masked
+    # out before occupancy, so the box reads as empty.
+    import dataclasses
+
+    b2 = dataclasses.replace(bundle, lidar_points=pts_lidar, boxes=[box])
+    (res,) = audit_frame_geometry(b2)
+    assert res.lidar_point_count == 0
+    assert res.is_ghost  # vehicle category, empty, within range
+
+
+def test_non_ghostable_category_not_flagged(bundle: FrameBundle) -> None:
+    """Empty boxes of non-rigid categories (e.g. animals) are not ghosts."""
+    import dataclasses
+
+    animal = AnnBox(
+        token="ann-deer",
+        instance_token="i-deer",
+        category="animal",
+        center=np.array([15.0, 2.0, 0.8]),
+        size=np.array([1.8, 4.2, 1.6]),
+        orientation=np.array([1.0, 0.0, 0.0, 0.0]),
+    )
+    b2 = dataclasses.replace(bundle, boxes=[animal])
+    (res,) = audit_frame_geometry(b2)
+    assert res.lidar_point_count == 0
+    assert not res.is_ghost
+
+
+def test_beyond_range_not_ghost(bundle: FrameBundle) -> None:
+    """Empty boxes past 35 m are out of lidar range, not ghosts."""
+    import dataclasses
+
+    far = AnnBox(
+        token="ann-far",
+        instance_token="i-far",
+        category="vehicle.car",
+        center=np.array([60.0, 0.0, 0.8]),
+        size=np.array([1.8, 4.2, 1.6]),
+        orientation=np.array([1.0, 0.0, 0.0, 0.0]),
+    )
+    b2 = dataclasses.replace(bundle, boxes=[far])
+    (res,) = audit_frame_geometry(b2)
+    assert res.lidar_point_count == 0
+    assert not res.is_ghost

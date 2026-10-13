@@ -1,4 +1,4 @@
-# Agent Operating Standards — Kozquloq
+# Agent Operating Standards - Kozquloq
 
 Non-negotiable rules for AI agents (and humans) modifying this repository.
 
@@ -10,12 +10,12 @@ Non-negotiable rules for AI agents (and humans) modifying this repository.
    (see `auditors/geometry.py::_lidar_to_camera_matrix`). Never shortcut
    lidar→camera directly; ego motion between sensor timestamps is real.
 2. **nuScenes box local frame: x = length, y = width.** `AnnBox.size` is
-   `(w, l, h)`; bounds test and corner generation must use
-   `size[[1,0,2]] / 2` as half-extents (see `geometry._half_extents`).
+   `(w, l, h)`; occupancy tests and corners go through the devkit `Box`
+   (`geometry.devkit_box`), which already encodes this convention.
    Deviating silently corrupts lidar point counts and produces false ghosts.
 3. **Ground Plane Isolation.** Synthetic fixtures must place ground returns
    at lidar z ≤ −2.0 so they cannot leak inside box z-ranges. Point-in-box
-   occupancy counts must only count real interior points — any heuristic
+   occupancy counts must only count real interior points - any heuristic
    that lets ground hits count as box support is a bug.
 4. **Hermetic Testing.** Zero external network calls in `tests/`. All tests
    run on synthetic fixtures in `tests/conftest.py`; the nuScenes dataset
@@ -29,7 +29,7 @@ Non-negotiable rules for AI agents (and humans) modifying this repository.
 
 Before claiming done: `uv run pytest` (≥85% coverage), `uv run mypy src tests`
 (0 errors), `uv run ruff check .` + `uv run ruff format --check .` clean,
-`uv run kozquloq demo --no-browser` exits 0.
+`uv run kozquloq demo --no-viz` exits 0.
 
 ## Design conventions
 
@@ -37,7 +37,7 @@ Before claiming done: `uv run pytest` (≥85% coverage), `uv run mypy src tests`
   into `FrameFindings`; `reset()` clears per-scene state).
 - Storage implements `storage/base.py::AuditStore`; `DuckDBAuditStore` is the
   reference implementation. Pipeline code depends on the abstraction only.
-- `storage/schema.sql` is a public contract — schema changes need a
+- `storage/schema.sql` is a public contract - schema changes need a
   documented migration path.
 - Keep it boring: vectorized NumPy, parameterized SQL, no unrequested
   abstraction.

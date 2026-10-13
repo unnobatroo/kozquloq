@@ -16,7 +16,7 @@ def _result(
         distance_to_ego_m=float(np.linalg.norm(pos)),
         lidar_point_count=100,
         radar_return_count=2,
-        is_ghost_label=False,
+        is_ghost=False,
         is_visible_on_camera=True,
         center_global=np.asarray(pos, dtype=np.float64),
         volume_m3=float(np.prod(size)),

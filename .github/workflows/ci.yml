@@ -51,4 +51,4 @@ jobs:
           path: coverage.xml
 
       - name: Headless CLI smoke test
-        run: uv run kozquloq demo --no-browser
+        run: uv run kozquloq demo --no-viz

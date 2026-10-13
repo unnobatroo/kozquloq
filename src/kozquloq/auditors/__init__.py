@@ -22,7 +22,8 @@ def audit_frame(
         auditor.audit_sample(bundle, findings)
     for r in findings.boxes:
         r.finalize_severity()
-    assert findings.health is not None
+    if findings.health is None:
+        raise RuntimeError("no sensor-health auditor produced frame health")
     return findings.health, findings.boxes
 
 

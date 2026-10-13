@@ -1,65 +1,62 @@
 # Kozquloq
 
-Autonomous vehicle sensor data quality & diagnostics pipeline for nuScenes.
-Audits geometric calibration (LiDAR→camera reprojection), annotation integrity
-(ghost labels), kinematic consistency (impossible velocities/accelerations,
-volume drift), and sensor health (underexposure, return counts) — then persists
-metrics to DuckDB for slicing, masking in PyTorch training, agentic diagnosis,
-and standalone HTML inspection reports.
+An annotation linter for autonomous vehicle datasets (nuScenes).
+It audits 3D annotations for spatial failures (ghost labels: boxes where the
+LiDAR saw nothing), kinematic failures (non-physical velocities/accelerations,
+volume drift), and sensor health (underexposure, geometric drift) - then
+exports invalid token lists for training pipelines as Parquet or JSON masks,
+plus annotated camera-frame overlays for visual inspection.
 
 ## Quickstart
 
 ```bash
 uv sync
-uv run kozquloq demo          # zero-setup: synthetic scene -> audit -> report
+uv run kozquloq demo          # zero-setup: synthetic scene -> audit -> summary
 ```
 
 Real data:
 
 ```bash
 python scripts/download_nuscenes_mini.py --out data/nuscenes
-uv run kozquloq audit --dataroot data/nuscenes --version v1.0-mini
-uv run kozquloq report --serve
-uv run kozquloq diagnose "which slices degrade most and why?"
-uv run kozquloq chat
+uv run kozquloq scan --dataroot data/nuscenes --viz-dir viz_out
+uv run kozquloq export --output invalid_tokens.parquet
+uv run kozquloq viz <sample_token> --dataroot data/nuscenes --output-dir viz_out
 ```
 
 Fixture data (no nuScenes needed):
 
 ```bash
 python scripts/seed_synthetic_fixtures.py --out data/fixture
-uv run kozquloq audit --dataroot data/fixture
+uv run kozquloq scan --dataroot data/fixture
 ```
 
-## Web dashboard (TypeScript / Next.js)
+## Commands
 
-`web/` is a self-contained dashboard that explains audit results in plain
-English — what is broken, how many, and why it matters.
-
-```bash
-uv run kozquloq report --json-out web/public/report.json   # exports JSON + assets/
-cd web && npm install && npm run dev                        # http://localhost:3000
-```
-
-Live data (optional): create the `reports` table via `supabase/schema.sql`,
-set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `web/`,
-then `SUPABASE_URL=... SUPABASE_SERVICE_KEY=... python scripts/publish_report.py report.json`.
+- `scan` - run the audit, print a Rich summary + slice failure table; with
+  `--viz-dir` also writes annotated JPEG overlays for every flagged frame.
+- `viz <sample_token>` - render the overlay for one keyframe (needs `--dataroot`).
+- `export` - write the invalid-token mask (`annotation_token` + `reason`) as
+  `.parquet` (DuckDB COPY) or `.json`.
+- `demo` - in-memory synthetic audit; writes preview overlays to `./viz_out/`
+  unless `--no-viz`. Runs in under a second.
 
 ## Compute on Azure
 
 `Dockerfile` builds the audit pipeline as a container; `infra/azure/` shows
-running it as an Azure Container Apps job that publishes to Supabase.
+running it as an Azure Container Apps job that writes the Parquet mask to
+Blob Storage.
 
 ## Test
 
 ```bash
 uv run pytest -v
+uv run mypy src tests
 ```
 
 ## Layout
 
-See `src/kozquloq/` — `auditors/` (geometry, kinematics, sensor health),
+See `src/kozquloq/` - `auditors/` (geometry, kinematics, sensor health),
 `storage/` (DuckDB schema + views), `pytorch/` (quality-masked Dataset),
-`agent/` (tool-calling diagnostics, `mock` and `openai` providers),
-`visualization/` (OpenCV overlays + Jinja2 HTML report), `cli/` (Typer app,
-Rich REPL).
+`visualization/` (static overlay renderer), `cli/` (Typer app).
+
+Architecture and data-flow diagrams: `docs/architecture.md`.

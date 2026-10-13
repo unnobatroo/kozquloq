@@ -39,7 +39,7 @@ def main() -> None:
         with tarfile.open(tgz) as tar:
             tar.extractall(out, filter="data")
         tgz.unlink()
-    print(f"done — use: kozquloq audit --dataroot {out} --version v1.0-mini")
+    print(f"done - use: kozquloq scan --dataroot {out} --version v1.0-mini")
 
 
 if __name__ == "__main__":

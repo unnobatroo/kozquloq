@@ -9,6 +9,6 @@ class Settings(BaseSettings):
     dataroot: Path = Path("data/nuscenes")
     version: str = "v1.0-mini"
     db_path: Path = Path("data/kozquloq.duckdb")
-    report_path: Path = Path("audit_report.html")
+    viz_dir: Path = Path("viz_out")
 
     lidar_horizon_m: float = 80.0  # depth normalization for overlays

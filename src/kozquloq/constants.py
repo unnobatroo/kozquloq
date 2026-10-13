@@ -9,6 +9,12 @@ SCALE_VARIANCE_MAX = 0.15
 # Ghost-label rule: 0 LiDAR points inside a box closer than this
 GHOST_DISTANCE_LIMIT_M = 35.0
 
+# Lidar-frame z cutoff: returns below this are road-surface ground plane
+GROUND_PLANE_Z_MAX_M = -2.0
+
+# Ghost checks only apply to rigid/movable object categories
+GHOSTABLE_PREFIXES = ("vehicle.", "human.pedestrian.")
+
 # Sensor health
 UNDEREXPOSED_MEAN_INTENSITY = 25.0  # 0..255
 

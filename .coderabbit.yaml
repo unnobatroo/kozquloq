@@ -1,4 +1,4 @@
-version: "2"
+version: 2
 language: "en-US"
 tone_instructions: "Be concise, direct, technically rigorous, and focus on algorithmic correctness, coordinate transforms, and type safety."
 reviews:

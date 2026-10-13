@@ -17,7 +17,7 @@ from kozquloq.auditors.geometry import (
 from kozquloq.constants import UNDEREXPOSED_MEAN_INTENSITY
 
 if TYPE_CHECKING:
-    from kozquloq.types import FrameBundle
+    from kozquloq.types import FrameBundle, SceneMeta
 
 
 @dataclass
@@ -27,10 +27,12 @@ class SampleHealth:
     radar_total_returns: int
     has_geometric_drift: bool
 
-    def to_row(self, bundle: FrameBundle) -> dict[str, Any]:
+    def to_row(self, bundle: FrameBundle, scene: SceneMeta) -> dict[str, Any]:
         return {
             "sample_token": bundle.sample_token,
-            "scene_token": bundle.scene_token,
+            "scene_name": scene.name,
+            "weather": scene.weather,
+            "time_of_day": scene.time_of_day,
             "timestamp": int(bundle.timestamp_us),
             "ego_speed_mps": float(bundle.ego_speed_mps),
             "camera_underexposed_count": self.camera_underexposed_count,

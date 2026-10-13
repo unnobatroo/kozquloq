@@ -21,11 +21,15 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
 
-def _se3(rotation: NDArray[np.float64], translation: NDArray[np.float64]) -> NDArray[np.float64]:
-    T = np.eye(4)
-    T[:3, :3] = rotation
-    T[:3, 3] = translation
-    return T
+def _se3(record: dict[str, Any]) -> NDArray[np.float64]:
+    """nuScenes calib/pose record -> 4x4 SE3 via the devkit transform builder."""
+    from nuscenes.utils.geometry_utils import transform_matrix
+    from pyquaternion import Quaternion
+
+    out: NDArray[np.float64] = transform_matrix(
+        np.asarray(record["translation"]), Quaternion(*record["rotation"])
+    )
+    return out
 
 
 def load_fixture_frames(root: str) -> Iterator[tuple[SceneMeta, list[FrameBundle]]]:
@@ -91,11 +95,6 @@ def _nuscenes_frame(
     import cv2
     from nuscenes.utils.data_classes import LidarPointCloud
 
-    from kozquloq.auditors.geometry import quat_to_rot
-
-    def se3_of(record: dict[str, Any]) -> NDArray[np.float64]:
-        return _se3(quat_to_rot(np.asarray(record["rotation"])), np.asarray(record["translation"]))
-
     lidar_sd = nusc.get("sample_data", sample["data"]["LIDAR_TOP"])
     cam_sd = nusc.get("sample_data", sample["data"]["CAM_FRONT"])
 
@@ -145,10 +144,10 @@ def _nuscenes_frame(
         lidar_points=points,
         radar_total_returns=radar_hits,
         boxes=boxes,
-        T_lidar_to_ego=se3_of(lidar_calib),
-        T_ego_lidar_to_global=se3_of(lidar_pose),
-        T_ego_cam_to_global=se3_of(cam_pose),
-        T_cam_to_ego=se3_of(cam_calib),
+        T_lidar_to_ego=_se3(lidar_calib),
+        T_ego_lidar_to_global=_se3(lidar_pose),
+        T_ego_cam_to_global=_se3(cam_pose),
+        T_cam_to_ego=_se3(cam_calib),
         K=np.asarray(cam_calib["camera_intrinsic"]),
     )
 
