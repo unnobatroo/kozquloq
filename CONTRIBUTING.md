@@ -1,34 +1,38 @@
 # Contributing to Kozquloq
 
-Thanks for your interest. All contributions are licensed under
-**GPL-3.0-or-later** - see `LICENSE`.
+All contributions land under **GPL-3.0-or-later** - see `LICENSE`.
 
-## Local setup
+## Setup
 
 ```bash
-uv sync --dev          # install runtime + dev dependencies
-uv run pytest          # run the test suite
-uv run mypy src tests  # strict type checking (0 errors required)
+uv sync --dev          # runtime + dev dependencies
+uv run pytest          # the suite - 37 tests, no network, no real dataset
+uv run mypy src tests  # strict typing, zero errors required
 uv run ruff check .    # lint
 uv run ruff format .   # format
-uv run kozquloq demo --no-browser   # headless end-to-end smoke test
+uv run kozquloq demo --no-viz   # headless end-to-end smoke test
 ```
 
 ## Workflow
 
 - **Branches:** `feat/<topic>`, `fix/<issue-id>`, `docs/<topic>`.
 - **Commits:** Conventional Commits - `feat:`, `fix:`, `refactor:`,
-  `test:`, `docs:`, `chore:`. Example: `fix: swap w/l bounds in points_in_box`.
-- **Pull requests:** fill in the PR template; CI must be green (ruff, mypy
-  strict, pytest with ≥85% coverage, headless demo smoke test).
+  `test:`, `docs:`, `chore:`.
+- **PRs:** fill in the template, keep CI green (ruff, mypy strict, pytest
+  with at least 85% coverage, headless demo). CodeRabbit reviews every PR.
 
-## Non-negotiables for changes to `src/kozquloq/`
+## The rules that do not bend
 
-- See `AGENTS.md` - coordinate-system invariants, hermetic tests, frozen
-  data contracts. These apply to human contributors equally.
-- All transforms LiDAR↔Camera must route through the ego-pose intermediate
-  frame with explicit timestamp alignment.
-- Tests must never hit the network or require the nuScenes dataset -
-  synthetic fixtures in `tests/conftest.py` only.
-- DuckDB schema changes require a migration story; the tables in
-  `storage/schema.sql` are a public contract for downstream tooling.
+`AGENTS.md` lists these formally; the short version:
+
+- **Sensor math routes through the ego frame.** LiDAR and camera timestamps
+  differ and the car moved in between - never transform lidar to camera
+  directly.
+- **nuScenes box axes: x = length, y = width.** Use the devkit `Box` for
+  occupancy and corners; hand-rolled math here has caused real bugs.
+- **Road points are not box evidence.** Ground returns (lidar z < -2.0 m)
+  get filtered before occupancy is counted.
+- **Tests stay hermetic.** Synthetic fixtures only - no network, no nuScenes
+  download. If a test needs real data, it is a script, not a test.
+- **`storage/schema.sql` is a public contract.** Downstream tooling reads
+  those tables; changes need a migration story, not a silent rename.

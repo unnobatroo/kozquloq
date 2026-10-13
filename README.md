@@ -1,39 +1,76 @@
 # Kozquloq
 
-An annotation linter for autonomous vehicle datasets (nuScenes).
-It audits 3D annotations for spatial failures (ghost labels: boxes where the
-LiDAR saw nothing), kinematic failures (non-physical velocities/accelerations,
-volume drift), and sensor health (underexposure, geometric drift) - then
-exports invalid token lists for training pipelines as Parquet or JSON masks,
-plus annotated camera-frame overlays for visual inspection.
+**A linter for self-driving car labels.** Think eslint, but for AV datasets.
+
+Self-driving datasets like nuScenes contain millions of 3D boxes that human
+annotators drew around cars, pedestrians, and barriers. Some of those labels
+are wrong in ways that quietly poison a model: a box drawn where the LiDAR
+recorded nothing, a "car" that accelerates at 32 m/s² between frames, a rigid
+object that shrinks 30% overnight in the data. Kozquloq reads the dataset,
+checks every label against what the sensors actually saw, and hands you a list
+of annotation tokens to drop from training - plus images showing exactly what
+was flagged and why.
+
+The name is Uzbek: *köz quloq* - eye and ear. One tool that watches both the
+camera and the point cloud.
 
 ## Quickstart
 
 ```bash
 uv sync
-uv run kozquloq demo          # zero-setup: synthetic scene -> audit -> summary
+uv run kozquloq demo          # synthetic scene, full audit, ~1 second
 ```
 
-Real data:
+On real data:
 
 ```bash
 python scripts/download_nuscenes_mini.py --out data/nuscenes
 uv run kozquloq scan --dataroot data/nuscenes --viz-dir viz_out
 uv run kozquloq export --output invalid_tokens.parquet
-uv run kozquloq viz <sample_token> --dataroot data/nuscenes --output-dir viz_out
+uv run kozquloq viz <sample_token> --dataroot data/nuscenes
 ```
 
-Fixture data (no nuScenes needed):
+No dataset handy? Generate a fixture dir:
 
 ```bash
 python scripts/seed_synthetic_fixtures.py --out data/fixture
 uv run kozquloq scan --dataroot data/fixture
 ```
 
+## What it catches
+
+- **Ghost labels** - a box where LiDAR recorded zero points. Either the
+  annotator hallucinated or the sensor dropped data; either way it teaches
+  the model to see objects that are not there. On nuScenes v1.0-mini this is
+  6% of all labels.
+- **Teleporting objects** - per-instance velocity and acceleration tracked
+  across frames. Non-physical motion means the annotation jittered or the
+  tracking ID hopped.
+- **Shapeshifting boxes** - rigid objects whose volume changes more than 15%
+  between frames.
+- **Sensor health** - underexposed camera frames and LiDAR/camera alignment
+  drift, per frame.
+
+Everything flagged gets a severity score. Anything at or above 0.5 lands in
+the exported mask.
+
+## The four commands
+
+- `scan` - the main event: audits everything, prints a health grade and a
+  failure-rate table per weather/category slice, optionally writes overlays
+  for every flagged frame (`--viz-dir`).
+- `viz <sample_token>` - the overlay for one frame, for eyeballing a specific
+  case.
+- `export` - the actual product: a Parquet or JSON file of `annotation_token`
+  plus a human-readable `reason`, filtered by `--min-severity`.
+- `demo` - synthetic scene, in-memory database, summary in about a second.
+
 ## Live report
 
-A static audit report on nuScenes v1.0-mini is hosted at
-[kozquloq.vercel.app](https://kozquloq.vercel.app). Rebuild it after a scan:
+[kozquloq.vercel.app](https://kozquloq.vercel.app) shows a real audit of
+nuScenes v1.0-mini as an interactive report - sortable slices, a searchable
+mask table with one-click JSON/CSV export, and overlay galleries. It is a
+static snapshot, not a service. Rebuild it after your own scan:
 
 ```bash
 uv run python scripts/build_site.py --db data/kozquloq.duckdb \
@@ -41,21 +78,32 @@ uv run python scripts/build_site.py --db data/kozquloq.duckdb \
 cd site_out && vercel deploy --prod
 ```
 
-## Commands
+## Honest caveats
 
-- `scan` - run the audit, print a Rich summary + slice failure table; with
-  `--viz-dir` also writes annotated JPEG overlays for every flagged frame.
-- `viz <sample_token>` - render the overlay for one keyframe (needs `--dataroot`).
-- `export` - write the invalid-token mask (`annotation_token` + `reason`) as
-  `.parquet` (DuckDB COPY) or `.json`.
-- `demo` - in-memory synthetic audit; writes preview overlays to `./viz_out/`
-  unless `--no-viz`. Runs in under a second.
+Zero LiDAR points is a strong signal, not a verdict - nuScenes legitimately
+annotates occluded objects, so the mask is a review list, not ground truth.
+And there is no recall number on real data: we know it catches faults we
+deliberately inject (the test suite plants ghosts, teleports and volume jumps
+and asserts they get caught), but how many real mislabels it misses is
+unmeasurable without hand-verified labels.
 
-## Compute on Azure
+## For training pipelines
 
-`Dockerfile` builds the audit pipeline as a container; `infra/azure/` shows
-running it as an Azure Container Apps job that writes the Parquet mask to
-Blob Storage.
+`kozquloq.pytorch.QualityAuditDataset` loads audits straight into tensors:
+each item carries engineered features, a corruption label, and a loss weight
+that downweights suspicious labels to 0 instead of deleting them.
+
+## Docs
+
+- [Wiki](https://github.com/unnobatroo/kozquloq/wiki) - architecture diagrams,
+  CLI reference, deployment.
+- [docs/architecture.md](docs/architecture.md) - how the pieces fit, with
+  Mermaid diagrams.
+- [infra/azure/README.md](infra/azure/README.md) - run it as an Azure batch
+  job.
+- [CONTRIBUTING.md](CONTRIBUTING.md) - dev setup and CI gates.
+- [SECURITY.md](SECURITY.md) - threat model and reporting.
+- [AGENTS.md](AGENTS.md) - the invariants that must never break.
 
 ## Test
 
@@ -64,20 +112,6 @@ uv run pytest -v
 uv run mypy src tests
 ```
 
-## Layout
-
-See `src/kozquloq/` - `auditors/` (geometry, kinematics, sensor health),
-`storage/` (DuckDB schema + views), `pytorch/` (quality-masked Dataset),
-`visualization/` (static overlay renderer), `cli/` (Typer app).
-
-## Docs
-
-- [Wiki](https://github.com/unnobatroo/kozquloq/wiki) - Home,
-  Architecture, CLI reference, Deployment.
-- [docs/architecture.md](docs/architecture.md) - component, class, sequence
-  and ER diagrams, audit rules.
-- [infra/azure/README.md](infra/azure/README.md) - run the audit as an
-  Azure Container Apps job.
-- [CONTRIBUTING.md](CONTRIBUTING.md) - dev setup, CI gates, PR flow.
-- [SECURITY.md](SECURITY.md) - threat model and reporting.
-- [AGENTS.md](AGENTS.md) - invariants for agent-driven changes.
+GPL-3.0-or-later. Sensor-fusion math is delegated to the nuScenes devkit and
+pyquaternion; persistence is a local DuckDB file; nothing in the core needs
+a network connection.

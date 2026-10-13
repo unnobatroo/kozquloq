@@ -92,8 +92,9 @@ th[data-col]:hover{color:var(--koz-teal)}
   <div class="col">
    <div class="page-pretitle"><span class="brand-sub">köz quloq - eye and ear</span></div>
    <h2 class="page-title mb-1">nuScenes v1.0-mini</h2>
-   <div class="text-secondary">__FLAGGED__ of __ANNS_FMT__ annotations flagged -
-    __FAILPCT__% failure rate. Static snapshot from <code>kozquloq scan</code>.</div>
+   <div class="text-secondary">__FLAGGED__ of __ANNS_FMT__ labels failed the sensor
+    check - __FAILPCT__% of the dataset. This page is a static snapshot of one
+    <code>kozquloq scan</code>.</div>
   </div>
   <div class="col-auto ms-auto">
    <span class="badge __GRADEBG__ fs-2 px-3 py-2">Grade __GRADE__</span>
@@ -156,7 +157,7 @@ th[data-col]:hover{color:var(--koz-teal)}
 <div class="pane hidden" id="pane-frames">
  <div class="d-flex align-items-center mb-3">
   <h3 class="mb-0">Annotated overlays</h3>
-  <span class="text-secondary ms-2 small">green = verified, red = ghost, amber = kinematic, blue = scale - click to zoom</span>
+  <span class="text-secondary ms-2 small">what the camera saw vs what the labels claim - click to zoom</span>
  </div>
  <div class="row g-3">__GALLERY__</div>
 </div>
@@ -167,7 +168,7 @@ th[data-col]:hover{color:var(--koz-teal)}
   <div class="card-header">
    <div class="row w-100 g-2 align-items-center">
     <div class="col"><h3 class="card-title mb-0">Invalid-token mask</h3>
-     <div class="text-secondary small mt-1">Exclude these annotations from training. Severity ≥0.5.</div></div>
+     <div class="text-secondary small mt-1">The tokens your training pipeline should drop. Severity ≥0.5.</div></div>
     <div class="col-auto"><div class="btn-group">
      <button class="btn btn-outline-primary btn-sm" onclick="downloadMask('json')"><i class="ti ti-file-type-js me-1"></i>JSON</button>
      <button class="btn btn-outline-primary btn-sm" onclick="downloadMask('csv')"><i class="ti ti-file-type-csv me-1"></i>CSV</button>
@@ -205,27 +206,27 @@ th[data-col]:hover{color:var(--koz-teal)}
 <div class="pane hidden" id="pane-how">
  <div class="row g-3 mb-4">
   <div class="col-md-6 col-xl-3"><div class="card step h-100"><div class="card-body">
-   <div class="subheader text-primary">01 - INGEST</div><b>nuScenes sensor logs</b>
-   <p class="text-secondary small mt-2">Keyframes, LiDAR sweeps, camera images, calibration and ego poses fused via timestamp-aware SE(3) transforms.</p></div></div></div>
+   <div class="subheader text-primary">01 - READ</div><b>Point it at the dataset</b>
+   <p class="text-secondary small mt-2">It walks every keyframe and pulls the camera image, the LiDAR cloud, the labels, and the calibration needed to line them up in space and time.</p></div></div></div>
   <div class="col-md-6 col-xl-3"><div class="card step h-100"><div class="card-body">
-   <div class="subheader text-primary">02 - GEOMETRY</div><b>Occupancy check</b>
-   <p class="text-secondary small mt-2">Ground plane removed (z &lt; -2.0 m), boxes tested with devkit <code>points_in_box</code>. Rigid/movable class + &lt;35 m + 0 points = ghost.</p></div></div></div>
+   <div class="subheader text-primary">02 - COUNT</div><b>What did LiDAR actually see?</b>
+   <p class="text-secondary small mt-2">For every box it counts the points inside. Road surface is ignored (z &lt; -2.0 m). A car or pedestrian under 35 m with zero points is a ghost.</p></div></div></div>
   <div class="col-md-6 col-xl-3"><div class="card step h-100"><div class="card-body">
-   <div class="subheader text-primary">03 - KINEMATICS</div><b>Trajectory audit</b>
-   <p class="text-secondary small mt-2">Per-instance velocity/acceleration from frame deltas; volume stability. Ped &gt;8 m/s², vehicle &gt;12 m/s², ΔV &gt;15%.</p></div></div></div>
+   <div class="subheader text-primary">03 - TRACK</div><b>Does the motion obey physics?</b>
+   <p class="text-secondary small mt-2">Each object ID is followed across frames. Pedestrians accelerating past 8 m/s², vehicles past 12, or rigid objects that change size by 15% get flagged.</p></div></div></div>
   <div class="col-md-6 col-xl-3"><div class="card step h-100"><div class="card-body">
-   <div class="subheader text-primary">04 - EXPORT</div><b>Mask + overlays</b>
-   <p class="text-secondary small mt-2">Invalid tokens go to a Parquet/JSON mask for training pipelines; flagged frames get annotated JPEG overlays.</p></div></div></div>
+   <div class="subheader text-primary">04 - EXPORT</div><b>Hand over the mask</b>
+   <p class="text-secondary small mt-2">The bad tokens go to a Parquet/JSON file your training pipeline can drop directly; flagged frames get annotated images like the ones here.</p></div></div></div>
  </div>
  <div class="row g-3">
   <div class="col-md-3"><div class="card"><div class="card-body border-top border-top-3 border-red">
-   <b>Ghost label</b><p class="text-secondary small mt-2 mb-0">Box drawn where LiDAR saw nothing. <code>severity 0.55 - masked</code></p></div></div></div>
+   <b>Ghost label</b><p class="text-secondary small mt-2 mb-0">Someone drew a box where the LiDAR recorded nothing. Training on it teaches hallucination. <code>severity 0.55 - masked</code></p></div></div></div>
   <div class="col-md-3"><div class="card"><div class="card-body border-top border-top-3 border-orange">
-   <b>Kinematic outlier</b><p class="text-secondary small mt-2 mb-0">Acceleration beyond physics: ID hops or jittered centers. <code>severity 0.25</code></p></div></div></div>
+   <b>Kinematic outlier</b><p class="text-secondary small mt-2 mb-0">The "object" moved faster than physics allows - an ID hop or a jittered center. <code>severity 0.25</code></p></div></div></div>
   <div class="col-md-3"><div class="card"><div class="card-body border-top border-top-3 border-azure">
-   <b>Scale unstable</b><p class="text-secondary small mt-2 mb-0">Rigid object volume changed &gt;15% between frames. <code>severity 0.20</code></p></div></div></div>
+   <b>Scale unstable</b><p class="text-secondary small mt-2 mb-0">A rigid object changed volume by more than 15% between frames. <code>severity 0.20</code></p></div></div></div>
   <div class="col-md-3"><div class="card"><div class="card-body border-top border-top-3 border-green">
-   <b>Verified</b><p class="text-secondary small mt-2 mb-0">LiDAR returns present, plausible motion, stable size. <code>severity 0.00 - keep</code></p></div></div></div>
+   <b>Verified</b><p class="text-secondary small mt-2 mb-0">LiDAR returns inside the box, plausible motion, stable size. <code>severity 0.00 - keep</code></p></div></div></div>
  </div>
  <div class="card mt-4"><div class="card-body">
   <h3 class="card-title">Reproduce</h3>
@@ -236,7 +237,9 @@ kozquloq viz &lt;sample_token&gt; --dataroot &lt;nuScenes-root&gt;</pre></div></
 </div>
 
 <footer class="footer footer-transparent mt-5"><div class="text-secondary small">
-<span class="brand-sub">Kozquloq</span> - eye and ear for AV training data.
+<span class="brand-sub">Kozquloq</span> - eslint for AV datasets. A zero-point
+box is a signal, not a verdict: occluded objects can legitimately be empty, so
+the mask is a review list rather than ground truth.
 GPL-3.0 - generated static snapshot, not live data.
 <a href="https://github.com/unnobatroo/kozquloq">github.com/unnobatroo/kozquloq</a></div></footer>
 </div></main></div>
