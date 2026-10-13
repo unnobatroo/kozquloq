@@ -1,0 +1,18 @@
+version: "2"
+language: "en-US"
+tone_instructions: "Be concise, direct, technically rigorous, and focus on algorithmic correctness, coordinate transforms, and type safety."
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "src/kozquloq/auditors/**"
+      instructions: "Enforce correct geometric coordinate transformations (SE3 transforms), right-handed coordinate conventions, explicit depth bounding, and vectorized NumPy operations. Reject unvectorized Python loops over point clouds. Note: nuScenes box local frame is x=length, y=width."
+    - path: "src/kozquloq/storage/**"
+      instructions: "Ensure SQL queries are parameterized to prevent injection. Verify DuckDB view logic uses explicit type casting and handles NULL/empty sets cleanly."
+  path_filters:
+    - "!tests/fixtures/**"
+    - "!data/**"

@@ -1,0 +1,55 @@
+name: Bug report
+description: Report an incorrect audit result, transform error, or crash
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Geometric audit (reprojection / points-in-box / ghost labels)
+        - Kinematic audit (velocity / acceleration / scale drift)
+        - Sensor health (exposure / drift detection)
+        - Storage (DuckDB schema / views)
+        - PyTorch dataset
+        - Diagnostic agent
+        - Visualization / HTML report
+        - CLI / REPL
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Observed vs expected behavior. For audit false positives/negatives, include the annotation token and frame if known.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Command run, dataset (fixture / v1.0-mini / other), flags.
+      placeholder: "uv run kozquloq audit --dataroot ... --db ..."
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Kozquloq version / commit
+      placeholder: "0.1.0 or git sha"
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I can reproduce this on the latest `main`
+          required: false
+        - label: I searched existing issues for duplicates
+          required: true

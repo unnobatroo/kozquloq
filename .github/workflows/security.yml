@@ -1,0 +1,29 @@
+name: Security
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # weekly, Mondays 06:00 UTC
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "uv.lock"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Dependency vulnerability audit
+        run: uv run pip-audit --strict || uv run pip-audit
+
+      - name: Static security analysis
+        run: uv run bandit -r src/kozquloq -c pyproject.toml

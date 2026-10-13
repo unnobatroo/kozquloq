@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a new sensor metric, auditor, or pipeline feature
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What data-quality problem does this catch? Which failure mode in AV training data does it address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: New auditor? New metric/column? New CLI flag? Describe inputs, outputs, and thresholds.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing tools, simpler approaches, and why they fall short.
+  - type: checkboxes
+    id: notes
+    attributes:
+      label: Scope check
+      options:
+        - label: This does not require network access in tests
+          required: false
+        - label: This does not break the existing DuckDB schema
+          required: false
+        - label: I am willing to implement this
+          required: false
