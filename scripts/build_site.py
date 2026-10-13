@@ -38,18 +38,19 @@ def render_images(dataroot: str, version: str, img_dir: Path, max_images: int) -
 
 
 PAGE = """<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark"><head><meta charset="utf-8">
+<html lang="en" data-bs-theme="light"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kozquloq - AV annotation lint report</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%2335c4b5' stroke-width='2' stroke-dasharray='4 3'/%3E%3Cpath d='M5 16 C9 10 23 10 27 16 C23 22 9 22 5 16 Z' fill='none' stroke='%23e8eef6' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2335c4b5'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%2335c4b5' stroke-width='2' stroke-dasharray='4 3'/%3E%3Cpath d='M5 16 C9 10 23 10 27 16 C23 22 9 22 5 16 Z' fill='none' stroke='%231a2634' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2335c4b5'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.6.1/dist/css/tabler.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css">
 <style>
 /* Kozquloq palette: deep ink base, lidar-teal accent, flag traffic colors */
-:root{--tblr-primary:#35c4b5;--tblr-body-bg:#0b0f14;--koz-teal:#35c4b5;
---koz-teal-dim:#1e7a72;--koz-ink:#0b0f14;--koz-card:#131a23}
-.btn-primary{background:var(--koz-teal);border-color:var(--koz-teal);color:#06231f;font-weight:600}
-.btn-primary:hover{background:#2ba99b;border-color:#2ba99b;color:#06231f}
+:root{--tblr-primary:#1f9d8f;--tblr-body-bg:#f5f7fa;--koz-teal:#1f9d8f;
+--koz-teal-dim:#177a70;--koz-ink:#1a2634;--koz-card:#ffffff}
+.btn-primary{background:var(--koz-teal);border-color:var(--koz-teal);color:#fff;font-weight:600}
+.btn-primary:hover{background:var(--koz-teal-dim);border-color:var(--koz-teal-dim);color:#fff}
+.koz-navbar{background:#fff;border-bottom:1px solid #e2e8f0}
 body{font-family:"Inter",-apple-system,"Segoe UI",Roboto,sans-serif}
 .kpi{font-size:1.9rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
 .gauge-svg{transform:rotate(-90deg)}
@@ -70,15 +71,15 @@ th[data-col]:hover{color:var(--koz-teal)}
 .nav-tabs .nav-link.active{border-color:var(--koz-teal) var(--koz-teal) transparent}
 </style></head><body class="antialiased">
 <div class="page">
-<header class="navbar navbar-expand-md navbar-dark bg-dark">
+<header class="navbar navbar-expand-md koz-navbar">
  <div class="container-xl">
   <a class="navbar-brand brand-mark" href="#"><svg viewBox="0 0 32 32" fill="none">
-   <circle cx="16" cy="16" r="14" stroke="#35c4b5" stroke-width="1.6" stroke-dasharray="4 3"/>
-   <path d="M5 16 C9 10 23 10 27 16 C23 22 9 22 5 16 Z" stroke="#e8eef6" stroke-width="1.8"/>
-   <circle cx="16" cy="16" r="4" fill="#35c4b5"/></svg>
+   <circle cx="16" cy="16" r="14" stroke="#1f9d8f" stroke-width="1.6" stroke-dasharray="4 3"/>
+   <path d="M5 16 C9 10 23 10 27 16 C23 22 9 22 5 16 Z" stroke="#1a2634" stroke-width="1.8"/>
+   <circle cx="16" cy="16" r="4" fill="#1f9d8f"/></svg>
    <span>Kozquloq <span class="text-secondary fw-normal">/ lint report</span></span></a>
   <div class="navbar-nav flex-row ms-auto">
-   <a class="btn btn-outline-light btn-sm me-2" href="https://github.com/unnobatroo/kozquloq" target="_blank"><i class="ti ti-brand-github me-1"></i>GitHub</a>
+   <a class="btn btn-outline-secondary btn-sm me-2" href="https://github.com/unnobatroo/kozquloq" target="_blank"><i class="ti ti-brand-github me-1"></i>GitHub</a>
    <button class="btn btn-primary btn-sm" onclick="downloadMask('json')"><i class="ti ti-download me-1"></i>Download mask</button>
   </div>
  </div>
@@ -113,7 +114,7 @@ th[data-col]:hover{color:var(--koz-teal)}
  <div class="row g-3 mb-1">
   <div class="col-sm-6 col-lg-4"><div class="card"><div class="card-body d-flex align-items-center">
    <svg class="gauge-svg" width="96" height="96" viewBox="0 0 96 96">
-    <circle cx="48" cy="48" r="40" fill="none" stroke="#263241" stroke-width="9"/>
+    <circle cx="48" cy="48" r="40" fill="none" stroke="#e5eaf0" stroke-width="9"/>
     <circle id="arc" cx="48" cy="48" r="40" fill="none" stroke="__GC__" stroke-width="9"
      stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="251"/></svg>
    <div class="ms-3"><div class="subheader">Health grade</div>
@@ -228,7 +229,7 @@ th[data-col]:hover{color:var(--koz-teal)}
  </div>
  <div class="card mt-4"><div class="card-body">
   <h3 class="card-title">Reproduce</h3>
-<pre class="bg-dark p-3 rounded mb-0 mono">pip install kozquloq
+<pre class="p-3 rounded mb-0 mono" style="background:#10181f;color:#c9d4e0">pip install kozquloq
 kozquloq scan --dataroot &lt;nuScenes-root&gt; --db audit.duckdb --viz-dir viz_out
 kozquloq export --db audit.duckdb --output mask.parquet --min-severity 0.5
 kozquloq viz &lt;sample_token&gt; --dataroot &lt;nuScenes-root&gt;</pre></div></div>
@@ -354,11 +355,11 @@ def build(db: str, img_names: list[str]) -> str:
 
     gallery = "".join(card(n) for n in img_names)
     grade_color = {
-        "A": ("bg-green", "#3fb950"),
-        "B": ("bg-lime", "#84cc16"),
-        "C": ("bg-yellow", "#eab308"),
-        "D": ("bg-orange", "#f97316"),
-        "F": ("bg-red", "#f85149"),
+        "A": ("bg-green-lt", "#2da44e"),
+        "B": ("bg-lime-lt", "#4c9a11"),
+        "C": ("bg-yellow-lt", "#9a6700"),
+        "D": ("bg-orange-lt", "#bc4c00"),
+        "F": ("bg-red-lt", "#cf222e"),
     }[s["grade"]]
 
     page = PAGE
