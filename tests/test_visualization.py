@@ -57,3 +57,18 @@ def test_render_report(audited_store: Store, tmp_path: Path) -> None:
     assert "Slice Degradation Matrix" in html
     assert "test findings" in html
     assert "vehicle.car" in html
+
+
+def test_export_report_json(audited_store: Store, tmp_path: Path) -> None:
+    import json
+
+    from kozquloq.visualization.report_generator import export_report_json
+
+    out = export_report_json(audited_store, tmp_path / "report.json")
+    d = json.loads(out.read_text())
+    assert d["health"]["grade"] in "ABCDF"
+    assert d["findings"] and d["findings"][0]["title"] == "Phantom objects"
+    assert d["charts"]["severity_hist"]
+    assert d["gallery"][0]["images"]["full"].startswith("assets/")
+    assert (tmp_path / "assets").is_dir()
+    assert d["gallery"][0]["plain"]  # plain-English caption present
