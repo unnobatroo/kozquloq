@@ -31,6 +31,25 @@ python scripts/seed_synthetic_fixtures.py --out data/fixture
 uv run kozquloq audit --dataroot data/fixture
 ```
 
+## Web dashboard (TypeScript / Next.js)
+
+`web/` is a self-contained dashboard that explains audit results in plain
+English — what is broken, how many, and why it matters.
+
+```bash
+uv run kozquloq report --json-out web/public/report.json   # exports JSON + assets/
+cd web && npm install && npm run dev                        # http://localhost:3000
+```
+
+Live data (optional): create the `reports` table via `supabase/schema.sql`,
+set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `web/`,
+then `SUPABASE_URL=... SUPABASE_SERVICE_KEY=... python scripts/publish_report.py report.json`.
+
+## Compute on Azure
+
+`Dockerfile` builds the audit pipeline as a container; `infra/azure/` shows
+running it as an Azure Container Apps job that publishes to Supabase.
+
 ## Test
 
 ```bash
