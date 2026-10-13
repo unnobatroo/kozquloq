@@ -18,7 +18,8 @@ class Normalize:
     @classmethod
     def from_rows(cls, rows: list[torch.Tensor]) -> Normalize:
         stacked = torch.stack(rows)
-        return cls(stacked.mean(0), stacked.std(0))
+        # correction=0: population std stays finite for a single-row input
+        return cls(stacked.mean(0), stacked.std(0, correction=0))
 
     def __call__(self, feats: torch.Tensor) -> torch.Tensor:
         return (feats - self.mean) / self.std

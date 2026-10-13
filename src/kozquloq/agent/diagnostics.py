@@ -46,7 +46,17 @@ class DiagnosticAgent:
                 {
                     "role": "assistant",
                     "content": resp.content or "",
-                    "tool_calls": [c.name for c in resp.tool_calls],
+                    "tool_calls": [
+                        {
+                            "id": c.id or f"call_{i}",
+                            "type": "function",
+                            "function": {
+                                "name": c.name,
+                                "arguments": json.dumps(c.args),
+                            },
+                        }
+                        for i, c in enumerate(resp.tool_calls)
+                    ],
                 }
             )
             for call in resp.tool_calls:
@@ -54,7 +64,16 @@ class DiagnosticAgent:
                     result = self.tools.dispatch(call.name, call.args)
                 except Exception as e:  # report tool errors back to the model
                     result = {"error": str(e)}
-                messages.append({"role": "tool", "name": call.name, "content": json.dumps(result)})
+                msg: dict[str, Any] = {
+                    "role": "tool",
+                    "content": json.dumps(result, default=str),
+                }
+                # OpenAI requires tool_call_id; the mock provider keys off name.
+                if call.id is None:
+                    msg["name"] = call.name
+                else:
+                    msg["tool_call_id"] = call.id
+                messages.append(msg)
         return DiagnosticResult(
             report="Diagnostic agent hit max_steps without a final report.",
             tool_calls=list(self.tools.calls),

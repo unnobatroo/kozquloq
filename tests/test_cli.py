@@ -46,7 +46,11 @@ def test_audit_report_diagnose_roundtrip(tmp_path: Path) -> None:
     assert r.exit_code != 0
 
 
-def test_chat_repl(tmp_path: Path) -> None:
+def test_chat_repl(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import webbrowser
+
+    monkeypatch.setattr(webbrowser, "open", lambda *_a, **_kw: True)
+
     from kozquloq.storage.duckdb_store import Store
 
     db = str(tmp_path / "chat.duckdb")

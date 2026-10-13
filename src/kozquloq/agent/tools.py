@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Any
 
 from kozquloq.storage import views
 
 if TYPE_CHECKING:
     from kozquloq.storage.duckdb_store import Store
+
+# Word-boundary blocklist for anything that can mutate state or touch the FS.
+_WRITE_RE = re.compile(
+    r"\b(insert|update|delete|drop|create|alter|attach|detach|copy|export|import|"
+    r"pragma|install|load|call|set|use|truncate|replace|grant|revoke|vacuum)\b",
+    re.IGNORECASE,
+)
 
 
 class AuditTools:
@@ -64,8 +72,12 @@ class AuditTools:
                 """
             )
         if name == "run_sql":
-            sql = str(args.get("sql", "")).strip().rstrip(";")
-            if not sql.upper().startswith(("SELECT", "WITH")):
-                raise ValueError("run_sql only accepts read-only SELECT/WITH queries")
+            sql = str(args.get("sql", "")).strip().rstrip(";").strip()
+            if (
+                ";" in sql
+                or not sql.upper().startswith(("SELECT", "WITH"))
+                or _WRITE_RE.search(sql)
+            ):
+                raise ValueError("run_sql accepts a single read-only SELECT/WITH query")
             return self.store.query(sql)
         raise ValueError(f"unknown tool: {name}")

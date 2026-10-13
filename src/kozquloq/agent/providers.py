@@ -15,6 +15,7 @@ from typing import Any, Protocol
 class ToolCall:
     name: str
     args: dict[str, Any] = field(default_factory=dict)
+    id: str | None = None  # required by the OpenAI tool-call protocol
 
 
 @dataclass
@@ -152,7 +153,7 @@ class OpenAIProvider:
         )
         msg = resp.choices[0].message
         calls = [
-            ToolCall(c.function.name, json.loads(c.function.arguments or "{}"))
+            ToolCall(c.function.name, json.loads(c.function.arguments or "{}"), c.id)
             for c in (msg.tool_calls or [])
         ]
         return LLMResponse(content=msg.content, tool_calls=calls)

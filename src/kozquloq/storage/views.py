@@ -39,8 +39,10 @@ def health_summary(store: AuditStore) -> dict[str, Any]:
                SUM(CASE WHEN a.is_ghost_label THEN 1 ELSE 0 END) AS ghosts,
                SUM(CASE WHEN a.is_kinematic_outlier THEN 1 ELSE 0 END) AS kinematic_outliers,
                SUM(CASE WHEN a.is_scale_unstable THEN 1 ELSE 0 END) AS scale_unstable,
-               SUM(CASE WHEN s.camera_underexposed_count > 0 THEN 1 ELSE 0 END) AS underexposed_frames,
-               SUM(CASE WHEN s.has_geometric_drift THEN 1 ELSE 0 END) AS drift_frames
+               COUNT(DISTINCT CASE WHEN s.camera_underexposed_count > 0 THEN s.sample_token END)
+                   AS underexposed_frames,
+               COUNT(DISTINCT CASE WHEN s.has_geometric_drift THEN s.sample_token END)
+                   AS drift_frames
         FROM samples s
         LEFT JOIN annotation_audits a ON a.sample_token = s.sample_token
         """
