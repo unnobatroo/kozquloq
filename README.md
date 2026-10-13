@@ -95,15 +95,21 @@ that downweights suspicious labels to 0 instead of deleting them.
 
 ## Docs
 
-- [Wiki](https://github.com/unnobatroo/kozquloq/wiki) - architecture diagrams,
-  CLI reference, deployment.
-- [docs/architecture.md](docs/architecture.md) - how the pieces fit, with
-  Mermaid diagrams.
-- [infra/azure/README.md](infra/azure/README.md) - run it as an Azure batch
-  job.
-- [CONTRIBUTING.md](CONTRIBUTING.md) - dev setup and CI gates.
-- [SECURITY.md](SECURITY.md) - threat model and reporting.
-- [AGENTS.md](AGENTS.md) - the invariants that must never break.
+All documentation lives in the
+[wiki](https://github.com/unnobatroo/kozquloq/wiki):
+
+- [Architecture](https://github.com/unnobatroo/kozquloq/wiki/Architecture) -
+  how the pieces fit, with diagrams.
+- [CLI Reference](https://github.com/unnobatroo/kozquloq/wiki/CLI-Reference) -
+  the four commands and their outputs.
+- [Deployment](https://github.com/unnobatroo/kozquloq/wiki/Deployment) -
+  report site, Azure batch job, Docker.
+- [Contributing](https://github.com/unnobatroo/kozquloq/wiki/Contributing) -
+  dev setup and CI gates.
+- [Security](https://github.com/unnobatroo/kozquloq/wiki/Security) - threat
+  model and reporting.
+- [AGENTS.md](AGENTS.md) - the invariants that must never break (kept in-repo:
+  agents load it automatically).
 
 ## Test
 
