@@ -77,14 +77,17 @@ def viz(
     output_dir: str = typer.Option("viz_out"),
 ) -> None:
     """Overlay boxes + lidar on one keyframe and save the JPEG."""
-    from kozquloq.auditors import audit_frame
+    from kozquloq.auditors import DEFAULT_AUDITORS, audit_frame
     from kozquloq.ingestion import load_frames
     from kozquloq.visualization.overlay import save_annotated_frame
 
     for _scene, frames in load_frames(dataroot, version):
+        # Fresh auditor instances per scene keep kinematic tracking state
+        # identical to a full scan, so viz flags match scan results.
+        auditors = [cls() for cls in DEFAULT_AUDITORS]
         for bundle in frames:
+            _, boxes = audit_frame(bundle, auditors)
             if bundle.sample_token == sample_token:
-                _, boxes = audit_frame(bundle)
                 path = save_annotated_frame(bundle, boxes, output_dir)
                 console.print(f"[bold green]Wrote {path.resolve()}[/]")
                 return
@@ -104,7 +107,7 @@ def export(
     """
     store = Store(db)
     if output.endswith(".parquet"):
-        store.export_parquet(output)
+        store.export_parquet(output, min_severity)
         console.print(f"[bold green]Parquet mask written to {output}[/]")
         return
     rows = store.get_invalid_tokens(min_severity)

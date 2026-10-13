@@ -120,8 +120,10 @@ def test_export_parquet(store: Store, tmp_path: Path) -> None:
     out = tmp_path / "audits.parquet"
     store.export_parquet(str(out))
     assert out.exists()
-    rows = store.query("SELECT COUNT(*) AS n FROM read_parquet(?)", [str(out)])
-    assert rows[0]["n"] == 2
+    # The mask contract: only flagged tokens, with a reason column.
+    rows = store.query("SELECT annotation_token, reason FROM read_parquet(?)", [str(out)])
+    assert [r["annotation_token"] for r in rows] == ["a1"]
+    assert "ghost" in rows[0]["reason"]
 
 
 def test_audit_pipeline_populates_db(audited_store: Store) -> None:

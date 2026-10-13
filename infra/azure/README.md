@@ -20,6 +20,9 @@ az acr build --registry <your-acr> --image kozquloq:latest .
 
 ## 2. Create the job
 
+The job command runs scan and export back to back so one execution produces
+both the audit database and the invalid-token mask:
+
 ```bash
 az containerapp job create \
   --name kozquloq-audit \
@@ -29,15 +32,14 @@ az containerapp job create \
   --cpu 2 --memory 4Gi \
   --replica-timeout 1800 \
   --trigger-type Manual \
-  --args scan --dataroot /data --db /out/kozquloq.duckdb --viz-dir /out/viz
+  --args sh -c "kozquloq scan --dataroot /data --db /out/kozquloq.duckdb --viz-dir /out/viz && \
+                kozquloq export --db /out/kozquloq.duckdb --output /out/invalid_tokens.parquet"
 ```
 
-Mount the nuScenes dataset via Azure Files (`--volumes`) or download it in an
-init container. A second run publishes the mask:
-
-```bash
-kozquloq export --db /out/kozquloq.duckdb --output /out/invalid_tokens.parquet
-```
+Mount the nuScenes dataset read-only at `/data` via Azure Files (`--volumes`),
+or download it in an init container. Mount an Azure Files share at `/out` so
+the outputs land in cloud storage when the container exits; alternatively run
+`az storage blob upload` as a follow-up step against `/out/*.parquet`.
 
 ## 3. Run it
 

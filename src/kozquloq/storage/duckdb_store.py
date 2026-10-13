@@ -16,6 +16,18 @@ if TYPE_CHECKING:
 
     from numpy.typing import NDArray
 
+_INVALID_TOKENS_SQL = """
+    SELECT annotation_token, category, severity,
+           CASE
+               WHEN is_ghost THEN 'ghost: zero lidar returns inside box'
+               WHEN is_kinematic_outlier THEN 'kinematic: non-physical motion'
+               WHEN is_scale_unstable THEN 'scale: volume changed between frames'
+               ELSE 'flagged'
+           END AS reason
+    FROM audits
+    WHERE severity >= ?
+"""
+
 
 class DuckDBAuditStore(AuditStore):
     """DuckDB-backed AuditStore."""
@@ -55,6 +67,8 @@ class DuckDBAuditStore(AuditStore):
                    SUM(CASE WHEN a.is_ghost THEN 1 ELSE 0 END) AS ghosts,
                    SUM(CASE WHEN a.is_kinematic_outlier THEN 1 ELSE 0 END) AS kinematic_outliers,
                    SUM(CASE WHEN a.is_scale_unstable THEN 1 ELSE 0 END) AS scale_unstable,
+                   SUM(CASE WHEN a.is_ghost OR a.is_kinematic_outlier
+                            OR a.is_scale_unstable THEN 1 ELSE 0 END) AS flagged,
                    COUNT(DISTINCT CASE WHEN s.camera_underexposed_count > 0
                         THEN s.sample_token END) AS underexposed_frames,
                    COUNT(DISTINCT CASE WHEN s.has_geometric_drift
@@ -64,9 +78,7 @@ class DuckDBAuditStore(AuditStore):
             """
         )[0]
         annotations = row["annotations"] or 0
-        flagged = (
-            (row["ghosts"] or 0) + (row["kinematic_outliers"] or 0) + (row["scale_unstable"] or 0)
-        )
+        flagged = row["flagged"] or 0
         failure_pct = round(100.0 * flagged / annotations, 2) if annotations else 0.0
         grade = (
             "A"
@@ -84,18 +96,7 @@ class DuckDBAuditStore(AuditStore):
     def get_invalid_tokens(self, min_severity: float = 0.5) -> list[dict[str, Any]]:
         """Annotation tokens to mask out of training, with a human reason."""
         return self.query(
-            """
-            SELECT annotation_token, category, severity,
-                   CASE
-                       WHEN is_ghost THEN 'ghost: zero lidar returns inside box'
-                       WHEN is_kinematic_outlier THEN 'kinematic: non-physical motion'
-                       WHEN is_scale_unstable THEN 'scale: volume changed between frames'
-                       ELSE 'flagged'
-                   END AS reason
-            FROM audits
-            WHERE severity >= ?
-            ORDER BY severity DESC, annotation_token
-            """,
+            f"{_INVALID_TOKENS_SQL} ORDER BY severity DESC, annotation_token",
             [min_severity],
         )
 
@@ -125,8 +126,13 @@ class DuckDBAuditStore(AuditStore):
         sql = f"INSERT OR REPLACE INTO {table} ({', '.join(cols)}) VALUES ({placeholders})"
         self.con.executemany(sql, [[r.get(c) for c in cols] for r in rows])
 
-    def export_parquet(self, out_path: str) -> None:
-        self.con.execute("COPY audits TO ? (FORMAT PARQUET)", [out_path])
+    def export_parquet(self, out_path: str, min_severity: float = 0.5) -> None:
+        """Write the invalid-token mask (same filter as get_invalid_tokens)."""
+        self.con.execute(
+            f"CREATE OR REPLACE TEMP TABLE _export_mask AS {_INVALID_TOKENS_SQL}",
+            [min_severity],
+        )
+        self.con.execute("COPY _export_mask TO ? (FORMAT PARQUET)", [out_path])
 
     def close(self) -> None:
         self.con.close()
