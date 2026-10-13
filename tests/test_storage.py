@@ -108,11 +108,11 @@ def test_health_summary(store: Store) -> None:
     assert h["grade"] == "F"
 
 
-def test_query_arrow(store: Store) -> None:
+def test_query_numpy(store: Store) -> None:
     _seed(store)
-    table = store.query_arrow("SELECT annotation_token, lidar_points FROM audits ORDER BY 1")
-    assert table.num_rows == 2
-    assert table.column("lidar_points").to_pylist() == [50, 10]
+    table = store.query_numpy("SELECT annotation_token, lidar_points FROM audits ORDER BY 1")
+    assert len(table["annotation_token"]) == 2
+    assert table["lidar_points"].tolist() == [50, 10]
 
 
 def test_export_parquet(store: Store, tmp_path: Path) -> None:
@@ -120,9 +120,8 @@ def test_export_parquet(store: Store, tmp_path: Path) -> None:
     out = tmp_path / "audits.parquet"
     store.export_parquet(str(out))
     assert out.exists()
-    import pyarrow.parquet as pq
-
-    assert pq.read_table(out).num_rows == 2
+    rows = store.query("SELECT COUNT(*) AS n FROM read_parquet(?)", [str(out)])
+    assert rows[0]["n"] == 2
 
 
 def test_audit_pipeline_populates_db(audited_store: Store) -> None:

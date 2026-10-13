@@ -14,7 +14,7 @@ from kozquloq.storage.base import AuditStore
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-    import pyarrow as pa
+    from numpy.typing import NDArray
 
 
 class DuckDBAuditStore(AuditStore):
@@ -39,9 +39,10 @@ class DuckDBAuditStore(AuditStore):
         cols = [d[0] for d in cur.description]
         return [dict(zip(cols, row, strict=False)) for row in cur.fetchall()]
 
-    def query_arrow(self, sql: str, params: list[Any] | None = None) -> pa.Table:
-        """Columnar read for zero-copy consumers (torch dataset, parquet)."""
-        return self.con.execute(sql, params or []).to_arrow_table()
+    def query_numpy(self, sql: str, params: list[Any] | None = None) -> dict[str, NDArray[Any]]:
+        """Columnar read for vectorized consumers (torch dataset)."""
+        result: dict[str, NDArray[Any]] = self.con.execute(sql, params or []).fetchnumpy()
+        return result
 
     def get_slice_metrics(self) -> list[dict[str, Any]]:
         return self.query("SELECT * FROM view_slice_failure_rates ORDER BY failure_rate_pct DESC")

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    import pyarrow as pa
+    from numpy.typing import NDArray
 
 
 class AuditStore(ABC):
@@ -25,7 +25,7 @@ class AuditStore(ABC):
     def query(self, sql: str, params: list[Any] | None = None) -> list[dict[str, Any]]: ...
 
     @abstractmethod
-    def query_arrow(self, sql: str, params: list[Any] | None = None) -> pa.Table: ...
+    def query_numpy(self, sql: str, params: list[Any] | None = None) -> dict[str, NDArray[Any]]: ...
 
     @abstractmethod
     def get_slice_metrics(self) -> list[dict[str, Any]]: ...

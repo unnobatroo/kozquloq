@@ -80,7 +80,7 @@ classDiagram
         +save_sample(row)*
         +save_audits(rows)*
         +query(sql, params)*
-        +query_arrow(sql, params)*
+        +query_numpy(sql, params)*
         +get_slice_metrics()*
         +get_summary()*
         +get_invalid_tokens(min_severity)*

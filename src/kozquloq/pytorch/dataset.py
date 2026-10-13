@@ -2,13 +2,13 @@
 
 Each item is one audited annotation: engineered features, a corruption label
 (ghost or kinematic outlier), and a sample weight for loss downweighting.
-Rows are loaded via a columnar Arrow read and stacked into tensors directly,
+Rows are loaded via a columnar NumPy read and stacked into tensors directly,
 not per-row dict conversion.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import numpy as np
 import torch
@@ -17,7 +17,6 @@ from torch.utils.data import Dataset
 from kozquloq.storage.duckdb_store import Store
 
 if TYPE_CHECKING:
-    import pyarrow as pa
     from numpy.typing import NDArray
 
 
@@ -40,10 +39,15 @@ FEATURE_COLUMNS = [
 ]
 
 
-def _col(table: pa.Table, name: str) -> NDArray[np.float64]:
+def _col(table: dict[str, NDArray[Any]], name: str) -> NDArray[np.float64]:
     """One column as a float64 numpy array; SQL NULLs become NaN."""
-    arr = table.column(name).combine_chunks()
-    out: NDArray[np.float64] = arr.to_numpy(zero_copy_only=False).astype(np.float64)
+    col = table[name]
+    values = (
+        col.tolist()  # type: ignore[no-untyped-call]
+        if isinstance(col, np.ma.MaskedArray)
+        else col
+    )
+    out: NDArray[np.float64] = np.asarray(values, dtype=np.float64)
     return out
 
 
@@ -52,7 +56,7 @@ class QualityAuditDataset(Dataset[QualityItem]):
         """min_severity_to_keep: audits at/above this severity get weight 0
         (downweighted) or are removed entirely when drop=True."""
         with Store(db_path) as store:
-            table = store.query_arrow(
+            table = store.query_numpy(
                 """
                 SELECT annotation_token, sample_token, distance_to_ego_m,
                        lidar_points, radar_return_count, velocity_mps,
@@ -85,8 +89,8 @@ class QualityAuditDataset(Dataset[QualityItem]):
         self._features = torch.from_numpy(feats[keep].astype(np.float32))
         self._labels = torch.from_numpy(labels[keep])
         self._severity = severity[keep]
-        self._sample_tokens = table.column("sample_token").to_pylist()
-        self._annotation_tokens = table.column("annotation_token").to_pylist()
+        self._sample_tokens = [str(t) for t in table["sample_token"]]
+        self._annotation_tokens = [str(t) for t in table["annotation_token"]]
         self._keep = keep
         self._min_sev = min_severity_to_keep
 
