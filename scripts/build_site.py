@@ -41,30 +41,45 @@ PAGE = """<!DOCTYPE html>
 <html lang="en" data-bs-theme="dark"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kozquloq - AV annotation lint report</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%2335c4b5' stroke-width='2' stroke-dasharray='4 3'/%3E%3Cpath d='M5 16 C9 10 23 10 27 16 C23 22 9 22 5 16 Z' fill='none' stroke='%23e8eef6' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2335c4b5'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.6.1/dist/css/tabler.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css">
 <style>
+/* Kozquloq palette: deep ink base, lidar-teal accent, flag traffic colors */
+:root{--tblr-primary:#35c4b5;--tblr-body-bg:#0b0f14;--koz-teal:#35c4b5;
+--koz-teal-dim:#1e7a72;--koz-ink:#0b0f14;--koz-card:#131a23}
+.btn-primary{background:var(--koz-teal);border-color:var(--koz-teal);color:#06231f;font-weight:600}
+.btn-primary:hover{background:#2ba99b;border-color:#2ba99b;color:#06231f}
 body{font-family:"Inter",-apple-system,"Segoe UI",Roboto,sans-serif}
 .kpi{font-size:1.9rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
 .gauge-svg{transform:rotate(-90deg)}
+.brand-mark{display:inline-flex;align-items:center;gap:8px}
+.brand-mark svg{height:26px;width:26px}
+.brand-sub{color:var(--koz-teal);font-size:11px;letter-spacing:2px;text-transform:uppercase}
 .gallery-img{cursor:zoom-in;transition:transform .18s,box-shadow .18s;object-fit:cover}
-.gallery-img:hover{transform:scale(1.015);box-shadow:0 6px 24px rgba(0,0,0,.4)}
+.gallery-img:hover{transform:scale(1.015);box-shadow:0 6px 24px rgba(53,196,181,.25)}
 .lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:1050;cursor:zoom-out}
 .lb.open{display:flex}.lb img{max-width:94vw;max-height:92vh;border-radius:6px}
-.table-sorted{color:#58a6ff}
+.table-sorted{color:var(--koz-teal)}
 th[data-col]{cursor:pointer;white-space:nowrap}
-th[data-col]:hover{color:var(--tblr-primary)}
+th[data-col]:hover{color:var(--koz-teal)}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem}
-.step{border-left:3px solid var(--tblr-primary)}
+.step{border-left:3px solid var(--koz-teal)}
 .failbar{min-width:70px}
 .hidden{display:none!important}
+.nav-tabs .nav-link.active{border-color:var(--koz-teal) var(--koz-teal) transparent}
 </style></head><body class="antialiased">
 <div class="page">
 <header class="navbar navbar-expand-md navbar-dark bg-dark">
  <div class="container-xl">
-  <a class="navbar-brand" href="#">Kozquloq <span class="text-secondary fw-normal">/ annotation lint report</span></a>
+  <a class="navbar-brand brand-mark" href="#"><svg viewBox="0 0 32 32" fill="none">
+   <circle cx="16" cy="16" r="14" stroke="#35c4b5" stroke-width="1.6" stroke-dasharray="4 3"/>
+   <path d="M5 16 C9 10 23 10 27 16 C23 22 9 22 5 16 Z" stroke="#e8eef6" stroke-width="1.8"/>
+   <circle cx="16" cy="16" r="4" fill="#35c4b5"/></svg>
+   <span>Kozquloq <span class="text-secondary fw-normal">/ lint report</span></span></a>
   <div class="navbar-nav flex-row ms-auto">
-   <a class="btn btn-outline-light btn-sm me-2" href="https://github.com/unnobatroo/kozquloq" target="_blank">GitHub ↗</a>
-   <button class="btn btn-primary btn-sm" onclick="downloadMask('json')">Download mask</button>
+   <a class="btn btn-outline-light btn-sm me-2" href="https://github.com/unnobatroo/kozquloq" target="_blank"><i class="ti ti-brand-github me-1"></i>GitHub</a>
+   <button class="btn btn-primary btn-sm" onclick="downloadMask('json')"><i class="ti ti-download me-1"></i>Download mask</button>
   </div>
  </div>
 </header>
@@ -74,7 +89,7 @@ th[data-col]:hover{color:var(--tblr-primary)}
 <div class="page-header d-print-none mb-4">
  <div class="row g-2 align-items-center">
   <div class="col">
-   <div class="page-pretitle">AUDIT REPORT</div>
+   <div class="page-pretitle"><span class="brand-sub">köz quloq - eye and ear</span></div>
    <h2 class="page-title mb-1">nuScenes v1.0-mini</h2>
    <div class="text-secondary">__FLAGGED__ of __ANNS_FMT__ annotations flagged -
     __FAILPCT__% failure rate. Static snapshot from <code>kozquloq scan</code>.</div>
@@ -86,11 +101,11 @@ th[data-col]:hover{color:var(--tblr-primary)}
 </div>
 
 <ul class="nav nav-tabs nav-fill mb-4" id="tabs">
- <li class="nav-item"><a class="nav-link active" data-pane="overview" href="#">Overview</a></li>
- <li class="nav-item"><a class="nav-link" data-pane="frames" href="#">Flagged frames</a></li>
- <li class="nav-item"><a class="nav-link" data-pane="tokens" href="#">Invalid-token mask
+ <li class="nav-item"><a class="nav-link active" data-pane="overview" href="#"><i class="ti ti-dashboard me-1"></i>Overview</a></li>
+ <li class="nav-item"><a class="nav-link" data-pane="frames" href="#"><i class="ti ti-photo-scan me-1"></i>Flagged frames</a></li>
+ <li class="nav-item"><a class="nav-link" data-pane="tokens" href="#"><i class="ti ti-filter me-1"></i>Invalid-token mask
    <span class="badge bg-red-lt ms-1">__TOKCOUNT__</span></a></li>
- <li class="nav-item"><a class="nav-link" data-pane="how" href="#">How it works</a></li>
+ <li class="nav-item"><a class="nav-link" data-pane="how" href="#"><i class="ti ti-info-circle me-1"></i>How it works</a></li>
 </ul>
 
 <!-- OVERVIEW -->
@@ -153,9 +168,9 @@ th[data-col]:hover{color:var(--tblr-primary)}
     <div class="col"><h3 class="card-title mb-0">Invalid-token mask</h3>
      <div class="text-secondary small mt-1">Exclude these annotations from training. Severity ≥0.5.</div></div>
     <div class="col-auto"><div class="btn-group">
-     <button class="btn btn-outline-primary btn-sm" onclick="downloadMask('json')">JSON ↓</button>
-     <button class="btn btn-outline-primary btn-sm" onclick="downloadMask('csv')">CSV ↓</button>
-     <button class="btn btn-outline-primary btn-sm" onclick="copyTokens()">Copy tokens</button>
+     <button class="btn btn-outline-primary btn-sm" onclick="downloadMask('json')"><i class="ti ti-file-type-js me-1"></i>JSON</button>
+     <button class="btn btn-outline-primary btn-sm" onclick="downloadMask('csv')"><i class="ti ti-file-type-csv me-1"></i>CSV</button>
+     <button class="btn btn-outline-primary btn-sm" onclick="copyTokens()"><i class="ti ti-copy me-1"></i>Copy tokens</button>
     </div></div>
    </div>
   </div>
@@ -164,9 +179,9 @@ th[data-col]:hover{color:var(--tblr-primary)}
     <input type="search" id="tokSearch" class="form-control w-auto" placeholder="Search token or category...">
     <div class="btn-group" id="reasonBtns">
      <button class="btn btn-sm active" data-f="">All</button>
-     <button class="btn btn-sm" data-f="ghost">Ghost</button>
-     <button class="btn btn-sm" data-f="kinematic">Kinematic</button>
-     <button class="btn btn-sm" data-f="scale">Scale</button>
+     <button class="btn btn-sm" data-f="ghost"><i class="ti ti-ghost-2 me-1"></i>Ghost</button>
+     <button class="btn btn-sm" data-f="kinematic"><i class="ti ti-run me-1"></i>Kinematic</button>
+     <button class="btn btn-sm" data-f="scale"><i class="ti ti-resize me-1"></i>Scale</button>
     </div>
     <select id="catSel" class="form-select w-auto"><option value="">All categories</option></select>
     <span class="text-secondary small ms-auto" id="tokCount"></span>
@@ -220,6 +235,7 @@ kozquloq viz &lt;sample_token&gt; --dataroot &lt;nuScenes-root&gt;</pre></div></
 </div>
 
 <footer class="footer footer-transparent mt-5"><div class="text-secondary small">
+<span class="brand-sub">Kozquloq</span> - eye and ear for AV training data.
 GPL-3.0 - generated static snapshot, not live data.
 <a href="https://github.com/unnobatroo/kozquloq">github.com/unnobatroo/kozquloq</a></div></footer>
 </div></main></div>
