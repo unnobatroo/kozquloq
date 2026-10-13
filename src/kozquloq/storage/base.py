@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class AuditStore(ABC):
@@ -32,3 +36,11 @@ class AuditStore(ABC):
 
     @abstractmethod
     def clear(self) -> None: ...
+
+    @contextmanager
+    def transaction(self) -> Iterator[None]:
+        """Atomic write scope: commits on success, rolls back on error.
+
+        Default is a no-op for stores without transaction support.
+        """
+        yield

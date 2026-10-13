@@ -16,6 +16,16 @@ _WRITE_RE = re.compile(
     r"pragma|install|load|call|set|use|truncate|replace|grant|revoke|vacuum)\b",
     re.IGNORECASE,
 )
+# run_sql may only read these audit tables/views — no filesystem paths,
+# no information_schema, no other catalogs.
+_TABLE_RE = re.compile(r"\b(?:from|join)\s+([a-zA-Z_]\w*)", re.IGNORECASE)
+_ALLOWED_TABLES = {
+    "scenes",
+    "samples",
+    "annotation_audits",
+    "sample_images",
+    "view_slice_failure_rates",
+}
 
 
 class AuditTools:
@@ -77,7 +87,10 @@ class AuditTools:
                 ";" in sql
                 or not sql.upper().startswith(("SELECT", "WITH"))
                 or _WRITE_RE.search(sql)
+                or not set(_TABLE_RE.findall(sql)) <= _ALLOWED_TABLES
             ):
-                raise ValueError("run_sql accepts a single read-only SELECT/WITH query")
+                raise ValueError(
+                    "run_sql accepts a single read-only SELECT/WITH query against the audit tables"
+                )
             return self.store.query(sql)
         raise ValueError(f"unknown tool: {name}")

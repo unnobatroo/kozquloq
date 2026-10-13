@@ -39,7 +39,7 @@ def _audit_scenes(
     console.print(f"[bold]Auditing {total} keyframes[/] from {source}")
     with Progress(console=console) as progress:
         task = progress.add_task("auditing", total=total)
-        run_audit(scenes, store, on_progress=lambda _b: progress.advance(task))
+        run_audit(scenes, store, on_progress=lambda _b: progress.advance(task), clear=True)
 
 
 @app.command()
@@ -85,7 +85,6 @@ def audit(
         source = "synthetic fixture scene"
 
     store = Store(db)
-    store.clear()
     _audit_scenes(store, scenes, source)
     console.print(health_table(views.health_summary(store)))
     console.print(f"[bold green]Audit written to {db}[/]")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import contextmanager
 from importlib import resources
 from typing import TYPE_CHECKING, Any
 
@@ -11,7 +12,7 @@ import duckdb
 from kozquloq.storage.base import AuditStore
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Iterator
 
 
 class DuckDBAuditStore(AuditStore):
@@ -59,6 +60,16 @@ class DuckDBAuditStore(AuditStore):
         """Delete all rows (children first) for a clean re-audit."""
         for table in ("sample_images", "annotation_audits", "samples", "scenes"):
             self.con.execute(f"DELETE FROM {table}")
+
+    @contextmanager
+    def transaction(self) -> Iterator[None]:
+        self.con.begin()
+        try:
+            yield
+        except BaseException:
+            self.con.rollback()
+            raise
+        self.con.commit()
 
     # --- convenience API ----------------------------------------------------
 

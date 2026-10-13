@@ -8,6 +8,12 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+  pre_merge_checks:
+    docstrings:
+      # Module + public-API docstrings are the convention; helpers stay
+      # self-explanatory. 40% reflects that, vs the 80% boilerplate default.
+      mode: "warning"
+      threshold: 40
   path_instructions:
     - path: "src/kozquloq/auditors/**"
       instructions: "Enforce correct geometric coordinate transformations (SE3 transforms), right-handed coordinate conventions, explicit depth bounding, and vectorized NumPy operations. Reject unvectorized Python loops over point clouds. Note: nuScenes box local frame is x=length, y=width."

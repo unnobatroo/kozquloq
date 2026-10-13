@@ -33,8 +33,23 @@ class AuditPipeline:
         self,
         scenes: Iterable[tuple[SceneMeta, list[FrameBundle]]],
         on_progress: Callable[[FrameBundle], None] | None = None,
+        clear: bool = False,
     ) -> None:
-        """Audit every scene and persist scene/sample/audit rows (+ JPEGs)."""
+        """Audit every scene and persist scene/sample/audit rows (+ JPEGs).
+
+        The whole run is atomic: an interruption rolls back instead of
+        leaving a partially-written (and misleadingly clean-looking) audit.
+        """
+        with self.store.transaction():
+            if clear:
+                self.store.clear()
+            self._run(scenes, on_progress)
+
+    def _run(
+        self,
+        scenes: Iterable[tuple[SceneMeta, list[FrameBundle]]],
+        on_progress: Callable[[FrameBundle], None] | None,
+    ) -> None:
         for scene, frames in scenes:
             for auditor in self.auditors:
                 auditor.reset()
@@ -78,6 +93,7 @@ def run_audit(
     store: AuditStore,
     save_images: bool = True,
     on_progress: Callable[[FrameBundle], None] | None = None,
+    clear: bool = False,
 ) -> None:
     """Convenience wrapper: run the default pipeline over `scenes`."""
-    AuditPipeline(store, save_images=save_images).run(scenes, on_progress)
+    AuditPipeline(store, save_images=save_images).run(scenes, on_progress, clear=clear)
