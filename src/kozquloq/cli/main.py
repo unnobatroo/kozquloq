@@ -97,9 +97,10 @@ def report(
     html: bool = typer.Option(True, "--html/--no-html"),
     serve: bool = typer.Option(False, "--serve/--no-serve"),
     out: str = typer.Option("audit_report.html"),
+    json_out: str | None = typer.Option(None, "--json-out", help="Export dashboard JSON"),
 ) -> None:
     """Terminal summary + optional HTML report from an audited database."""
-    from kozquloq.visualization.report_generator import render_report
+    from kozquloq.visualization.report_generator import export_report_json, render_report
 
     store = Store(db)
     console.print(health_table(views.health_summary(store)))
@@ -109,6 +110,9 @@ def report(
         console.print(f"[bold green]Report written to {path.resolve()}[/]")
         if serve:
             webbrowser.open(path.resolve().as_uri())
+    if json_out:
+        jpath = export_report_json(store, json_out)
+        console.print(f"[bold green]Dashboard JSON written to {jpath.resolve()}[/]")
 
 
 @app.command()
